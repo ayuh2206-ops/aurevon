@@ -1,6 +1,7 @@
 'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { addProperty, updateProperty, getProperty, uploadPropertyImage } from '@/lib/firebaseUtils';
 
 const amenitiesList = [
     'Security (24/7)', 'CCTV', 'Intercom', 'Power Backup',
@@ -18,8 +19,22 @@ const subtypes = {
 };
 
 export default function AddPropertyPage() {
+    return (
+        <Suspense fallback={<div className="p-12 text-center text-[#7A7268]">Loading form...</div>}>
+            <PropertyForm />
+        </Suspense>
+    );
+}
+
+function PropertyForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const editId = searchParams.get('id');
+
     const [openSection, setOpenSection] = useState('basic');
+    const [isSaving, setIsSaving] = useState(false);
+    const [isLoadingData, setIsLoadingData] = useState(!!editId);
+    const [imageFile, setImageFile] = useState(null);
 
     const [formData, setFormData] = useState({
         name: '', type: 'Office Space', subtype: 'Bare Shell',
@@ -42,27 +57,89 @@ export default function AddPropertyPage() {
         }));
     };
 
-    const handleSave = (isDraft) => {
-        const id = `AR-${new Date().getFullYear()}-${String(Date.now()).slice(-3)}`;
-        const property = {
-            id, name: formData.name, type: formData.type, subtype: formData.subtype,
-            locality: formData.locality, city: formData.city,
-            priceDisplay: formData.priceMin ? `₹${formData.priceMin}${formData.priceMax ? '–' + formData.priceMax : ''}` : '',
-            bhk: 'Commercial', sqft: formData.superBuiltUp || '0',
-            status: isDraft ? 'Draft' : formData.constructionStatus === 'ready' ? 'Ready to Move' : formData.constructionStatus === 'under' ? 'Under Construction' : 'New Launch',
-            yield: formData.yieldPercent || null,
-            image: formData.featureImage || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
-            featured: formData.featured, nriFriendly: formData.nriFriendly, active: !isDraft,
-            shortDescription: formData.shortDescription,
-        };
-
-        const stored = typeof window !== 'undefined' ? localStorage.getItem('aurevon_properties') : null;
-        const existing = stored ? JSON.parse(stored) : [];
-        const updated = [property, ...existing];
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('aurevon_properties', JSON.stringify(updated));
+    useEffect(() => {
+        if (editId) {
+            getProperty(editId).then(data => {
+                if (data) {
+                    setFormData(prev => ({
+                        ...prev, ...data,
+                        amenities: data.amenities || [],
+                        statusRadio: data.active ? 'active' : 'draft',
+                        featureImage: data.image || '',
+                        tags: data.tags ? data.tags.join(', ') : '',
+                    }));
+                }
+            }).catch(console.error).finally(() => setIsLoadingData(false));
         }
-        router.push('/admin/dashboard/properties');
+    }, [editId]);
+
+    const handleSave = async (isDraft) => {
+        setIsSaving(true);
+        try {
+            let uploadedImageUrl = formData.featureImage;
+
+            // Upload image to Firebase Storage if a new file was selected
+            if (imageFile) {
+                const downloadUrl = await uploadPropertyImage(imageFile);
+                if (downloadUrl) {
+                    uploadedImageUrl = downloadUrl;
+                }
+            }
+
+            const property = {
+                name: formData.name,
+                type: formData.type,
+                subtype: formData.subtype,
+                listingType: formData.listingType,
+                locality: formData.locality,
+                city: formData.city,
+                address: formData.address,
+                mapsUrl: formData.mapsUrl,
+                landmark: formData.landmark,
+                priceMin: formData.priceMin,
+                priceMax: formData.priceMax,
+                priceSqft: formData.priceSqft,
+                negotiable: formData.negotiable,
+                priceDisplay: formData.priceMin ? `₹${formData.priceMin}${formData.priceMax ? '–' + formData.priceMax : ''}` : '',
+                bhk: formData.bhk || 'Commercial',
+                sqft: formData.superBuiltUp || '0',
+                superBuiltUp: formData.superBuiltUp,
+                carpetArea: formData.carpetArea,
+                bathrooms: formData.bathrooms,
+                floor: formData.floor,
+                totalFloors: formData.totalFloors,
+                facing: formData.facing,
+                parking: formData.parking,
+                furnishing: formData.furnishing,
+                possession: formData.possession,
+                status: isDraft ? 'Draft' : formData.constructionStatus === 'ready' ? 'Ready to Move' : formData.constructionStatus === 'under' ? 'Under Construction' : 'New Launch',
+                constructionStatus: formData.constructionStatus,
+                yield: formData.yieldPercent || null,
+                yieldPercent: formData.yieldPercent,
+                maintenanceCharge: formData.maintenance,
+                image: uploadedImageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
+                amenities: formData.amenities,
+                tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
+                virtualTourUrl: formData.virtualTourUrl,
+                featured: formData.featured,
+                nriFriendly: formData.nriFriendly,
+                active: !isDraft,
+                shortDescription: formData.shortDescription,
+                fullDescription: formData.fullDescription
+            };
+
+            if (editId) {
+                await updateProperty(editId, property);
+            } else {
+                await addProperty(property);
+            }
+            router.push('/admin/dashboard/properties');
+        } catch (error) {
+            console.error('Failed to save property:', error);
+            alert('Failed to save property. Please check console for details.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const SectionHeader = ({ id, title }) => (
@@ -75,9 +152,13 @@ export default function AddPropertyPage() {
         </button>
     );
 
+    if (isLoadingData) {
+        return <div className="p-12 text-center text-[#7A7268]">Loading property details...</div>;
+    }
+
     return (
         <div>
-            <h2 className="font-serif text-2xl sm:text-3xl text-[#1A1714] mb-8">Add New Property</h2>
+            <h2 className="font-serif text-2xl sm:text-3xl text-[#1A1714] mb-8">{editId ? 'Edit Property' : 'Add New Property'}</h2>
 
             <div className="bg-white rounded shadow border border-[#D9D0C0] p-4 sm:p-8 max-w-4xl">
                 {/* SECTION 1: Basic Information */}
@@ -90,7 +171,11 @@ export default function AddPropertyPage() {
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Property Type</label>
-                            <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.type} onChange={e => { update('type', e.target.value); update('subtype', subtypes[e.target.value][0]); }}>
+                            <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.type} onChange={e => {
+                                const newType = e.target.value;
+                                update('type', newType);
+                                update('subtype', subtypes[newType] ? subtypes[newType][0] : '');
+                            }}>
                                 {Object.keys(subtypes).map(t => <option key={t}>{t}</option>)}
                             </select>
                         </div>
@@ -264,14 +349,27 @@ export default function AddPropertyPage() {
                 {openSection === 'media' && (
                     <div className="py-6 grid grid-cols-1 gap-6">
                         <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Feature Image URL</label>
-                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.featureImage} onChange={e => update('featureImage', e.target.value)} placeholder="https://..." />
+                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Feature Image (Upload)</label>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="w-full border border-[#D9D0C0] p-2 rounded focus:border-[#C9A96E] outline-none text-sm"
+                                onChange={e => {
+                                    if (e.target.files[0]) {
+                                        setImageFile(e.target.files[0]);
+                                    }
+                                }}
+                            />
+                            {imageFile && <p className="text-xs text-green-600 mt-1">Image selected: {imageFile.name}</p>}
                         </div>
                         <div>
+                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Or Image URL</label>
+                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.featureImage} onChange={e => update('featureImage', e.target.value)} placeholder="Only used if no file is uploaded" />
+                        </div>
+                        <div className="sm:col-span-2">
                             <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Virtual Tour URL</label>
                             <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.virtualTourUrl} onChange={e => update('virtualTourUrl', e.target.value)} placeholder="YouTube / Matterport" />
                         </div>
-                        <p className="text-xs text-[#7A7268]">File uploads will be available once Firebase Storage is connected.</p>
                     </div>
                 )}
 
@@ -306,13 +404,13 @@ export default function AddPropertyPage() {
 
                 {/* Actions */}
                 <div className="flex flex-wrap gap-4 pt-8 border-t border-[#D9D0C0] mt-6">
-                    <button onClick={() => handleSave(true)} className="px-6 py-2.5 border border-[#7A7268] text-[#7A7268] rounded text-sm uppercase tracking-wider cursor-pointer hover:border-[#C9A96E] transition-colors">
-                        Save as Draft
+                    <button onClick={() => handleSave(true)} disabled={isSaving} className="px-6 py-2.5 border border-[#7A7268] text-[#7A7268] rounded text-sm uppercase tracking-wider cursor-pointer hover:border-[#C9A96E] transition-colors disabled:opacity-50">
+                        {isSaving ? 'Saving...' : 'Save as Draft'}
                     </button>
-                    <button onClick={() => handleSave(false)} className="px-6 py-2.5 bg-[#C9A96E] text-[#0D0B09] rounded text-sm uppercase tracking-wider cursor-pointer hover:bg-[#F5F0E8] transition-colors">
-                        Publish Listing
+                    <button onClick={() => handleSave(false)} disabled={isSaving} className="px-6 py-2.5 bg-[#C9A96E] text-[#0D0B09] rounded text-sm uppercase tracking-wider cursor-pointer hover:bg-[#F5F0E8] transition-colors disabled:opacity-50">
+                        {isSaving ? 'Publishing...' : (editId ? 'Update Listing' : 'Publish Listing')}
                     </button>
-                    <button onClick={() => router.push('/admin/dashboard/properties')} className="px-6 py-2.5 text-[#7A7268] text-sm uppercase tracking-wider cursor-pointer hover:text-[#1A1714] transition-colors">
+                    <button onClick={() => router.push('/admin/dashboard/properties')} disabled={isSaving} className="px-6 py-2.5 text-[#7A7268] text-sm uppercase tracking-wider cursor-pointer hover:text-[#1A1714] transition-colors disabled:opacity-50">
                         Cancel
                     </button>
                 </div>

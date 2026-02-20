@@ -1,13 +1,15 @@
 'use client';
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { initialProperties } from '@/lib/data';
+import { getProperties } from '@/lib/firebaseUtils';
 import { MapPin, Expand, IndianRupee, Building2, TrendingUp, Search as SearchIcon, ChevronDown, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
 function PropertiesContent() {
     const searchParams = useSearchParams();
-    const [filteredProperties, setFilteredProperties] = useState(initialProperties);
+    const [allProperties, setAllProperties] = useState([]);
+    const [filteredProperties, setFilteredProperties] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     // Parse query params
     const tab = searchParams.get('tab');
@@ -20,7 +22,22 @@ function PropertiesContent() {
     const filterStatus = searchParams.get('constructionstatus');
 
     useEffect(() => {
-        let results = initialProperties.filter(p => p.active);
+        const fetchProperties = async () => {
+            setIsLoading(true);
+            try {
+                const data = await getProperties();
+                setAllProperties(data);
+            } catch (error) {
+                console.error("Error fetching properties:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchProperties();
+    }, []);
+
+    useEffect(() => {
+        let results = allProperties.filter(p => p.active);
 
         // Filter by tab (Buy/Lease etc)
         if (tab) {
@@ -62,7 +79,7 @@ function PropertiesContent() {
         // kept minimal here for UI demonstration based on standard demo data.
 
         setFilteredProperties(results);
-    }, [searchParams]);
+    }, [searchParams, allProperties]);
 
     return (
         <div className="min-h-screen bg-[#0D0B09] pt-32 pb-20">
@@ -91,8 +108,12 @@ function PropertiesContent() {
                     </div>
                 </div>
 
-                {/* Results Grid */}
-                {filteredProperties.length > 0 ? (
+                {/* Results Grid / Loading State */}
+                {isLoading ? (
+                    <div className="py-20 flex justify-center items-center">
+                        <div className="w-12 h-12 border-2 border-[#C9A96E] border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                ) : filteredProperties.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {filteredProperties.map((property) => (
                             <Link href={`/properties/${property.id}`} key={property.id} className="group cursor-pointer">
