@@ -1,0 +1,15 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/admin/dashboard/enquiries/page": "app/admin/dashboard/enquiries/page.js",
+  "/admin/dashboard/page": "app/admin/dashboard/page.js",
+  "/admin/dashboard/properties/new/page": "app/admin/dashboard/properties/new/page.js",
+  "/admin/dashboard/properties/page": "app/admin/dashboard/properties/page.js",
+  "/admin/dashboard/settings/page": "app/admin/dashboard/settings/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/blog/[slug]/page": "app/blog/[slug]/page.js",
+  "/blog/page": "app/blog/page.js",
+  "/page": "app/page.js",
+  "/privacy-policy/page": "app/privacy-policy/page.js",
+  "/properties/[id]/page": "app/properties/[id]/page.js",
+  "/terms-of-service/page": "app/terms-of-service/page.js"
+}
