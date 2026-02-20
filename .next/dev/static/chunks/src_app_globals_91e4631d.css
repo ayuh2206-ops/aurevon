@@ -594,6 +594,10 @@
     margin-inline: auto;
   }
 
+  .my-1 {
+    margin-block: calc(var(--spacing) * 1);
+  }
+
   .mt-1 {
     margin-top: calc(var(--spacing) * 1);
   }
@@ -863,6 +867,10 @@
     height: 100%;
   }
 
+  .h-px {
+    height: 1px;
+  }
+
   .min-h-screen {
     min-height: 100vh;
   }
@@ -973,6 +981,10 @@
 
   .max-w-7xl {
     max-width: var(--container-7xl);
+  }
+
+  .max-w-\[120px\] {
+    max-width: 120px;
   }
 
   .max-w-lg {

@@ -1,18 +1,33 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Search, MapPin, Mic, ChevronDown } from 'lucide-react';
 import { useTypewriter } from '@/hooks/useTypewriter';
 
 export default function SearchBar() {
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState('Buy');
     const [showTypeDropdown, setShowTypeDropdown] = useState(false);
     const [selectedType, setSelectedType] = useState('All Commercial');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [openFilter, setOpenFilter] = useState(null);
+    const [selectedFilters, setSelectedFilters] = useState({
+        'Budget': '',
+        'Area (sqft)': '',
+        'Yield %': '',
+        'Construction Status': '',
+    });
+
     const dropdownRef = useRef(null);
+    const filtersRef = useRef(null);
 
     useEffect(() => {
         function handleClickOutside(event) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setShowTypeDropdown(false);
+            }
+            if (filtersRef.current && !filtersRef.current.contains(event.target)) {
+                setOpenFilter(null);
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
@@ -29,6 +44,33 @@ export default function SearchBar() {
     const placeholder = useTypewriter(placeholders);
 
     const commercialTypes = ['Office Space', 'Retail/Shop', 'Showroom', 'Co-Working', 'Warehouse', 'Industrial', 'IT Park', 'Cold Storage'];
+
+    const filterOptions = {
+        'Budget': ['Under ₹50 Lacs', '₹50 Lacs - ₹1 Cr', '₹1 Cr - ₹5 Cr', 'Above ₹5 Cr'],
+        'Area (sqft)': ['Under 500 sqft', '500 - 1000 sqft', '1000 - 5000 sqft', 'Above 5000 sqft'],
+        'Yield %': ['Up to 5%', '5% - 7%', '7% - 9%', 'Above 9%'],
+        'Construction Status': ['Under Construction', 'Ready to Move', 'New Launch'],
+        'Property Type': commercialTypes
+    };
+
+    const handleSearch = () => {
+        const queryParams = new URLSearchParams();
+        if (activeTab) queryParams.append('tab', activeTab);
+        if (selectedType !== 'All Commercial') queryParams.append('type', selectedType);
+        if (searchQuery.trim()) queryParams.append('q', searchQuery.trim());
+
+        Object.entries(selectedFilters).forEach(([key, value]) => {
+            if (value) queryParams.append(key.toLowerCase().replace(/[^a-z0-9]/g, ''), value);
+        });
+
+        router.push(`/properties?${queryParams.toString()}`);
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            handleSearch();
+        }
+    };
 
     return (
         <div className="w-full max-w-5xl mx-auto bg-[#0D0B09]/85 backdrop-blur-xl rounded-xl border-t-2 border-[#C9A96E] shadow-[0_24px_60px_rgba(0,0,0,0.5)] p-4 md:p-6 relative z-20">
@@ -104,6 +146,9 @@ export default function SearchBar() {
                     <input
                         id="property-search"
                         type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={handleKeyDown}
                         placeholder={placeholder}
                         className="w-full bg-transparent border-none outline-none text-[#F5F0E8] font-sans text-[15px] placeholder:text-[#7A7268]"
                     />
@@ -119,19 +164,74 @@ export default function SearchBar() {
                             <Mic className="w-4 h-4" />
                         </button>
                     </div>
-                    <button className="bg-[#C9A96E] text-[#0D0B09] font-sans font-medium uppercase text-sm px-6 py-3 rounded hover:bg-[#F5F0E8] transition-colors whitespace-nowrap cursor-pointer">
+                    <button
+                        onClick={handleSearch}
+                        className="bg-[#C9A96E] text-[#0D0B09] font-sans font-medium uppercase text-sm px-6 py-3 rounded hover:bg-[#F5F0E8] transition-colors whitespace-nowrap cursor-pointer">
                         Search
                     </button>
                 </div>
             </div>
 
             {/* Filter Pills */}
-            <div className="mt-5 flex flex-wrap gap-3">
-                {['Budget', 'Area (sqft)', 'Yield %', 'Construction Status', 'Property Type'].map(filter => (
-                    <button key={filter} className="shrink-0 flex items-center px-4 py-1.5 rounded-full border border-[#C9A96E] text-[#F5F0E8] text-xs font-sans uppercase tracking-wider hover:bg-[#C9A96E] hover:text-[#0D0B09] transition-colors cursor-pointer">
-                        {filter} <ChevronDown className="w-3 h-3 ml-1" />
-                    </button>
-                ))}
+            <div className="mt-5 flex flex-wrap gap-3" ref={filtersRef}>
+                {Object.keys(filterOptions).map(filter => {
+                    const isOpen = openFilter === filter;
+                    let displayValue = filter;
+
+                    if (filter === 'Property Type') {
+                        if (selectedType !== 'All Commercial') displayValue = selectedType;
+                    } else if (selectedFilters[filter]) {
+                        displayValue = selectedFilters[filter];
+                    }
+
+                    return (
+                        <div key={filter} className="relative">
+                            <button
+                                onClick={() => setOpenFilter(isOpen ? null : filter)}
+                                className={`shrink-0 flex items-center px-4 py-1.5 rounded-full border text-xs font-sans uppercase tracking-wider transition-colors cursor-pointer ${displayValue !== filter || isOpen
+                                        ? 'border-[#C9A96E] bg-[#C9A96E] text-[#0D0B09]'
+                                        : 'border-[#C9A96E] text-[#F5F0E8] hover:bg-[#C9A96E]/20'
+                                    }`}
+                            >
+                                <span className="truncate max-w-[120px]">{displayValue}</span>
+                                <ChevronDown className={`w-3 h-3 ml-1 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {/* Pill Dropdown */}
+                            {isOpen && (
+                                <div className="absolute top-full left-0 mt-2 w-48 bg-[#0D0B09]/95 backdrop-blur-md border border-[#2E2A25] rounded-lg py-2 shadow-2xl z-50">
+                                    <button
+                                        onClick={() => {
+                                            if (filter === 'Property Type') setSelectedType('All Commercial');
+                                            else setSelectedFilters(prev => ({ ...prev, [filter]: '' }));
+                                            setOpenFilter(null);
+                                        }}
+                                        className="w-full text-left px-4 py-2 text-xs font-sans text-[#7A7268] hover:text-[#C9A96E] hover:bg-[#1A1714] transition-colors"
+                                    >
+                                        Clear Selection
+                                    </button>
+                                    <div className="w-full h-px bg-[#2E2A25] my-1"></div>
+                                    {filterOptions[filter].map(option => (
+                                        <button
+                                            key={option}
+                                            onClick={() => {
+                                                if (filter === 'Property Type') setSelectedType(option);
+                                                else setSelectedFilters(prev => ({ ...prev, [filter]: option }));
+                                                setOpenFilter(null);
+                                            }}
+                                            className={`w-full text-left px-4 py-2 text-sm font-sans transition-colors ${(filter === 'Property Type' ? selectedType === option : selectedFilters[filter] === option)
+                                                    ? 'text-[#C9A96E] bg-[#1A1714]'
+                                                    : 'text-[#F5F0E8] hover:text-[#C9A96E] hover:bg-[#1A1714]'
+                                                }`}
+                                        >
+                                            {option}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

@@ -706,6 +706,7 @@ __turbopack_context__.s([
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/jsx-dev-runtime.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/compiled/react/index.js [app-client] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/navigation.js [app-client] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$search$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Search$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/search.js [app-client] (ecmascript) <export default as Search>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$map$2d$pin$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__MapPin$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/map-pin.js [app-client] (ecmascript) <export default as MapPin>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$mic$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Mic$3e$__ = __turbopack_context__.i("[project]/node_modules/lucide-react/dist/esm/icons/mic.js [app-client] (ecmascript) <export default as Mic>");
@@ -717,17 +718,31 @@ var _s = __turbopack_context__.k.signature();
 ;
 ;
 ;
+;
 function SearchBar() {
     _s();
+    const router = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"])();
     const [activeTab, setActiveTab] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('Buy');
     const [showTypeDropdown, setShowTypeDropdown] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [selectedType, setSelectedType] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('All Commercial');
+    const [searchQuery, setSearchQuery] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])('');
+    const [openFilter, setOpenFilter] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [selectedFilters, setSelectedFilters] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])({
+        'Budget': '',
+        'Area (sqft)': '',
+        'Yield %': '',
+        'Construction Status': ''
+    });
     const dropdownRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
+    const filtersRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "SearchBar.useEffect": ()=>{
             function handleClickOutside(event) {
                 if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                     setShowTypeDropdown(false);
+                }
+                if (filtersRef.current && !filtersRef.current.contains(event.target)) {
+                    setOpenFilter(null);
                 }
             }
             document.addEventListener("mousedown", handleClickOutside);
@@ -760,6 +775,47 @@ function SearchBar() {
         'IT Park',
         'Cold Storage'
     ];
+    const filterOptions = {
+        'Budget': [
+            'Under ₹50 Lacs',
+            '₹50 Lacs - ₹1 Cr',
+            '₹1 Cr - ₹5 Cr',
+            'Above ₹5 Cr'
+        ],
+        'Area (sqft)': [
+            'Under 500 sqft',
+            '500 - 1000 sqft',
+            '1000 - 5000 sqft',
+            'Above 5000 sqft'
+        ],
+        'Yield %': [
+            'Up to 5%',
+            '5% - 7%',
+            '7% - 9%',
+            'Above 9%'
+        ],
+        'Construction Status': [
+            'Under Construction',
+            'Ready to Move',
+            'New Launch'
+        ],
+        'Property Type': commercialTypes
+    };
+    const handleSearch = ()=>{
+        const queryParams = new URLSearchParams();
+        if (activeTab) queryParams.append('tab', activeTab);
+        if (selectedType !== 'All Commercial') queryParams.append('type', selectedType);
+        if (searchQuery.trim()) queryParams.append('q', searchQuery.trim());
+        Object.entries(selectedFilters).forEach(([key, value])=>{
+            if (value) queryParams.append(key.toLowerCase().replace(/[^a-z0-9]/g, ''), value);
+        });
+        router.push(`/properties?${queryParams.toString()}`);
+    };
+    const handleKeyDown = (e)=>{
+        if (e.key === 'Enter') {
+            handleSearch();
+        }
+    };
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: "w-full max-w-5xl mx-auto bg-[#0D0B09]/85 backdrop-blur-xl rounded-xl border-t-2 border-[#C9A96E] shadow-[0_24px_60px_rgba(0,0,0,0.5)] p-4 md:p-6 relative z-20",
         children: [
@@ -774,25 +830,25 @@ function SearchBar() {
                                 className: "absolute -top-1 -right-2 w-1.5 h-1.5 bg-red-500 rounded-full"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/SearchBar.jsx",
-                                lineNumber: 44,
+                                lineNumber: 86,
                                 columnNumber: 50
                             }, this),
                             activeTab === tab && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "absolute bottom-0 left-0 w-full h-[3px] bg-[#C9A96E]"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/SearchBar.jsx",
-                                lineNumber: 45,
+                                lineNumber: 87,
                                 columnNumber: 47
                             }, this)
                         ]
                     }, tab, true, {
                         fileName: "[project]/src/components/SearchBar.jsx",
-                        lineNumber: 38,
+                        lineNumber: 80,
                         columnNumber: 21
                     }, this))
             }, void 0, false, {
                 fileName: "[project]/src/components/SearchBar.jsx",
-                lineNumber: 36,
+                lineNumber: 78,
                 columnNumber: 13
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -812,20 +868,20 @@ function SearchBar() {
                                         children: selectedType
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/SearchBar.jsx",
-                                        lineNumber: 59,
+                                        lineNumber: 101,
                                         columnNumber: 25
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$down$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronDown$3e$__["ChevronDown"], {
                                         className: `w-4 h-4 text-[#C9A96E] ml-2 transition-transform duration-200 ${showTypeDropdown ? 'rotate-180' : ''}`
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/SearchBar.jsx",
-                                        lineNumber: 60,
+                                        lineNumber: 102,
                                         columnNumber: 25
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/SearchBar.jsx",
-                                lineNumber: 54,
+                                lineNumber: 96,
                                 columnNumber: 21
                             }, this),
                             showTypeDropdown && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -839,7 +895,7 @@ function SearchBar() {
                                                 children: "Commercial Property Types"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/SearchBar.jsx",
-                                                lineNumber: 66,
+                                                lineNumber: 108,
                                                 columnNumber: 33
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -849,13 +905,13 @@ function SearchBar() {
                                                 children: "Clear All"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/SearchBar.jsx",
-                                                lineNumber: 67,
+                                                lineNumber: 109,
                                                 columnNumber: 33
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/SearchBar.jsx",
-                                        lineNumber: 65,
+                                        lineNumber: 107,
                                         columnNumber: 29
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -875,7 +931,7 @@ function SearchBar() {
                                                         className: "hidden"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/SearchBar.jsx",
-                                                        lineNumber: 78,
+                                                        lineNumber: 120,
                                                         columnNumber: 41
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -884,12 +940,12 @@ function SearchBar() {
                                                             className: "w-2 h-2 bg-[#C9A96E] rounded-sm"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/SearchBar.jsx",
-                                                            lineNumber: 90,
+                                                            lineNumber: 132,
                                                             columnNumber: 71
                                                         }, this)
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/SearchBar.jsx",
-                                                        lineNumber: 89,
+                                                        lineNumber: 131,
                                                         columnNumber: 41
                                                     }, this),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -897,30 +953,30 @@ function SearchBar() {
                                                         children: type
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/SearchBar.jsx",
-                                                        lineNumber: 92,
+                                                        lineNumber: 134,
                                                         columnNumber: 41
                                                     }, this)
                                                 ]
                                             }, type, true, {
                                                 fileName: "[project]/src/components/SearchBar.jsx",
-                                                lineNumber: 77,
+                                                lineNumber: 119,
                                                 columnNumber: 37
                                             }, this))
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/SearchBar.jsx",
-                                        lineNumber: 75,
+                                        lineNumber: 117,
                                         columnNumber: 29
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/SearchBar.jsx",
-                                lineNumber: 64,
+                                lineNumber: 106,
                                 columnNumber: 25
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/SearchBar.jsx",
-                        lineNumber: 53,
+                        lineNumber: 95,
                         columnNumber: 17
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -930,7 +986,7 @@ function SearchBar() {
                                 className: "w-5 h-5 text-[#C9A96E] mr-3 shrink-0"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/SearchBar.jsx",
-                                lineNumber: 102,
+                                lineNumber: 144,
                                 columnNumber: 21
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
@@ -939,23 +995,26 @@ function SearchBar() {
                                 children: "Search commercial properties"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/SearchBar.jsx",
-                                lineNumber: 103,
+                                lineNumber: 145,
                                 columnNumber: 21
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
                                 id: "property-search",
                                 type: "text",
+                                value: searchQuery,
+                                onChange: (e)=>setSearchQuery(e.target.value),
+                                onKeyDown: handleKeyDown,
                                 placeholder: placeholder,
                                 className: "w-full bg-transparent border-none outline-none text-[#F5F0E8] font-sans text-[15px] placeholder:text-[#7A7268]"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/SearchBar.jsx",
-                                lineNumber: 104,
+                                lineNumber: 146,
                                 columnNumber: 21
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/SearchBar.jsx",
-                        lineNumber: 101,
+                        lineNumber: 143,
                         columnNumber: 17
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -971,12 +1030,12 @@ function SearchBar() {
                                             className: "w-4 h-4"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/SearchBar.jsx",
-                                            lineNumber: 116,
+                                            lineNumber: 161,
                                             columnNumber: 29
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/SearchBar.jsx",
-                                        lineNumber: 115,
+                                        lineNumber: 160,
                                         columnNumber: 25
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -986,80 +1045,150 @@ function SearchBar() {
                                             className: "w-4 h-4"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/SearchBar.jsx",
-                                            lineNumber: 119,
+                                            lineNumber: 164,
                                             columnNumber: 29
                                         }, this)
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/SearchBar.jsx",
-                                        lineNumber: 118,
+                                        lineNumber: 163,
                                         columnNumber: 25
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/SearchBar.jsx",
-                                lineNumber: 114,
+                                lineNumber: 159,
                                 columnNumber: 21
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                onClick: handleSearch,
                                 className: "bg-[#C9A96E] text-[#0D0B09] font-sans font-medium uppercase text-sm px-6 py-3 rounded hover:bg-[#F5F0E8] transition-colors whitespace-nowrap cursor-pointer",
                                 children: "Search"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/SearchBar.jsx",
-                                lineNumber: 122,
+                                lineNumber: 167,
                                 columnNumber: 21
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/SearchBar.jsx",
-                        lineNumber: 113,
+                        lineNumber: 158,
                         columnNumber: 17
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/SearchBar.jsx",
-                lineNumber: 51,
+                lineNumber: 93,
                 columnNumber: 13
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "mt-5 flex flex-wrap gap-3",
-                children: [
-                    'Budget',
-                    'Area (sqft)',
-                    'Yield %',
-                    'Construction Status',
-                    'Property Type'
-                ].map((filter)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                        className: "shrink-0 flex items-center px-4 py-1.5 rounded-full border border-[#C9A96E] text-[#F5F0E8] text-xs font-sans uppercase tracking-wider hover:bg-[#C9A96E] hover:text-[#0D0B09] transition-colors cursor-pointer",
+                ref: filtersRef,
+                children: Object.keys(filterOptions).map((filter)=>{
+                    const isOpen = openFilter === filter;
+                    let displayValue = filter;
+                    if (filter === 'Property Type') {
+                        if (selectedType !== 'All Commercial') displayValue = selectedType;
+                    } else if (selectedFilters[filter]) {
+                        displayValue = selectedFilters[filter];
+                    }
+                    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "relative",
                         children: [
-                            filter,
-                            " ",
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$down$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronDown$3e$__["ChevronDown"], {
-                                className: "w-3 h-3 ml-1"
-                            }, void 0, false, {
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                onClick: ()=>setOpenFilter(isOpen ? null : filter),
+                                className: `shrink-0 flex items-center px-4 py-1.5 rounded-full border text-xs font-sans uppercase tracking-wider transition-colors cursor-pointer ${displayValue !== filter || isOpen ? 'border-[#C9A96E] bg-[#C9A96E] text-[#0D0B09]' : 'border-[#C9A96E] text-[#F5F0E8] hover:bg-[#C9A96E]/20'}`,
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        className: "truncate max-w-[120px]",
+                                        children: displayValue
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/components/SearchBar.jsx",
+                                        lineNumber: 196,
+                                        columnNumber: 33
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$chevron$2d$down$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ChevronDown$3e$__["ChevronDown"], {
+                                        className: `w-3 h-3 ml-1 transition-transform ${isOpen ? 'rotate-180' : ''}`
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/components/SearchBar.jsx",
+                                        lineNumber: 197,
+                                        columnNumber: 33
+                                    }, this)
+                                ]
+                            }, void 0, true, {
                                 fileName: "[project]/src/components/SearchBar.jsx",
-                                lineNumber: 132,
-                                columnNumber: 34
+                                lineNumber: 189,
+                                columnNumber: 29
+                            }, this),
+                            isOpen && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                className: "absolute top-full left-0 mt-2 w-48 bg-[#0D0B09]/95 backdrop-blur-md border border-[#2E2A25] rounded-lg py-2 shadow-2xl z-50",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                        onClick: ()=>{
+                                            if (filter === 'Property Type') setSelectedType('All Commercial');
+                                            else setSelectedFilters((prev)=>({
+                                                    ...prev,
+                                                    [filter]: ''
+                                                }));
+                                            setOpenFilter(null);
+                                        },
+                                        className: "w-full text-left px-4 py-2 text-xs font-sans text-[#7A7268] hover:text-[#C9A96E] hover:bg-[#1A1714] transition-colors",
+                                        children: "Clear Selection"
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/components/SearchBar.jsx",
+                                        lineNumber: 203,
+                                        columnNumber: 37
+                                    }, this),
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                        className: "w-full h-px bg-[#2E2A25] my-1"
+                                    }, void 0, false, {
+                                        fileName: "[project]/src/components/SearchBar.jsx",
+                                        lineNumber: 213,
+                                        columnNumber: 37
+                                    }, this),
+                                    filterOptions[filter].map((option)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                                            onClick: ()=>{
+                                                if (filter === 'Property Type') setSelectedType(option);
+                                                else setSelectedFilters((prev)=>({
+                                                        ...prev,
+                                                        [filter]: option
+                                                    }));
+                                                setOpenFilter(null);
+                                            },
+                                            className: `w-full text-left px-4 py-2 text-sm font-sans transition-colors ${(filter === 'Property Type' ? selectedType === option : selectedFilters[filter] === option) ? 'text-[#C9A96E] bg-[#1A1714]' : 'text-[#F5F0E8] hover:text-[#C9A96E] hover:bg-[#1A1714]'}`,
+                                            children: option
+                                        }, option, false, {
+                                            fileName: "[project]/src/components/SearchBar.jsx",
+                                            lineNumber: 215,
+                                            columnNumber: 41
+                                        }, this))
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/src/components/SearchBar.jsx",
+                                lineNumber: 202,
+                                columnNumber: 33
                             }, this)
                         ]
                     }, filter, true, {
                         fileName: "[project]/src/components/SearchBar.jsx",
-                        lineNumber: 131,
-                        columnNumber: 21
-                    }, this))
+                        lineNumber: 188,
+                        columnNumber: 25
+                    }, this);
+                })
             }, void 0, false, {
                 fileName: "[project]/src/components/SearchBar.jsx",
-                lineNumber: 129,
+                lineNumber: 176,
                 columnNumber: 13
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/SearchBar.jsx",
-        lineNumber: 34,
+        lineNumber: 76,
         columnNumber: 9
     }, this);
 }
-_s(SearchBar, "9f4KJvmjLL79CEHsa820TZwt9Ss=", false, function() {
+_s(SearchBar, "3YN3GRW1wnBOIPH7uT3NosE7gr0=", false, function() {
     return [
+        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"],
         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$useTypewriter$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useTypewriter"]
     ];
 });
