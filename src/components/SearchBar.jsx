@@ -1,11 +1,23 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Search, MapPin, Mic, ChevronDown } from 'lucide-react';
 import { useTypewriter } from '@/hooks/useTypewriter';
 
 export default function SearchBar() {
     const [activeTab, setActiveTab] = useState('Buy');
     const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+    const [selectedType, setSelectedType] = useState('All Commercial');
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setShowTypeDropdown(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const tabs = ['Buy', 'Lease', 'New Launch', 'Pre-Leased', 'Projects'];
     const placeholders = [
@@ -38,27 +50,46 @@ export default function SearchBar() {
             {/* Search Row */}
             <div className="flex flex-col md:flex-row items-center gap-4 bg-[#1A1714] p-2 rounded-lg border border-[#2E2A25]">
                 {/* Property Type Dropdown */}
-                <div className="relative w-full md:w-auto md:min-w-[160px] border-b md:border-b-0 md:border-r border-[#2E2A25] pb-2 md:pb-0 md:pr-4">
+                <div className="relative w-full md:w-auto md:min-w-[170px] border-b md:border-b-0 md:border-r border-[#2E2A25] pb-2 md:pb-0 md:pr-4" ref={dropdownRef}>
                     <button
                         onClick={() => setShowTypeDropdown(!showTypeDropdown)}
                         className="w-full flex items-center justify-between font-sans text-sm text-[#F5F0E8] p-2 cursor-pointer"
                         aria-label="Select commercial property type"
                     >
-                        <span className="truncate">All Commercial</span>
-                        <ChevronDown className="w-4 h-4 text-[#C9A96E] ml-2" />
+                        <span className="truncate">{selectedType}</span>
+                        <ChevronDown className={`w-4 h-4 text-[#C9A96E] ml-2 transition-transform duration-200 ${showTypeDropdown ? 'rotate-180' : ''}`} />
                     </button>
 
                     {showTypeDropdown && (
                         <div className="absolute top-full left-0 mt-4 w-[280px] sm:w-[320px] md:w-[500px] bg-[#0D0B09]/95 backdrop-blur-md border border-[#2E2A25] rounded-lg p-4 md:p-6 shadow-2xl z-50">
                             <div className="flex justify-between items-center mb-4">
                                 <p className="text-[#C9A96E] font-serif text-lg md:text-xl">Commercial Property Types</p>
-                                <button className="text-[#7A7268] text-xs font-sans uppercase cursor-pointer" aria-label="Clear all property type filters">Clear All</button>
+                                <button
+                                    onClick={() => setSelectedType('All Commercial')}
+                                    className="text-[#7A7268] hover:text-[#C9A96E] text-xs font-sans uppercase cursor-pointer transition-colors"
+                                    aria-label="Clear all property type filters"
+                                >
+                                    Clear All
+                                </button>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                                 {commercialTypes.map(type => (
                                     <label key={type} className="flex items-center space-x-2 text-[#F5F0E8] text-sm font-sans cursor-pointer group">
-                                        <div className="w-4 h-4 shrink-0 border border-[#7A7268] rounded group-hover:border-[#C9A96E] flex items-center justify-center"></div>
-                                        <span>{type}</span>
+                                        <input
+                                            type="radio"
+                                            name="propertyType"
+                                            value={type}
+                                            checked={selectedType === type}
+                                            onChange={(e) => {
+                                                setSelectedType(e.target.value);
+                                                setShowTypeDropdown(false);
+                                            }}
+                                            className="hidden"
+                                        />
+                                        <div className={`w-4 h-4 shrink-0 border ${selectedType === type ? 'border-[#C9A96E] bg-[#C9A96E]/20' : 'border-[#7A7268]'} rounded group-hover:border-[#C9A96E] flex items-center justify-center transition-colors`}>
+                                            {selectedType === type && <div className="w-2 h-2 bg-[#C9A96E] rounded-sm"></div>}
+                                        </div>
+                                        <span className={selectedType === type ? 'text-[#C9A96E]' : 'group-hover:text-[#C9A96E] transition-colors'}>{type}</span>
                                     </label>
                                 ))}
                             </div>
