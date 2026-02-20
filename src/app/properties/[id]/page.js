@@ -46,7 +46,7 @@ export default function PropertyDetailPage() {
 
     const whatsappMessage = `Hi Arun, I'm interested in the following commercial property listed on Aurevon Realty:\n\n🏢 *${property.name}*\n📍 ${property.locality}, ${property.city}\n📐 ${property.sqft} sqft\n💰 ${property.priceDisplay}\n📈 Yield: ${property.yield || 'N/A'}\n✅ ${property.status}\n🔖 Listing ID: ${property.id}\n\nI found this listing on your website and would like to know more. Could you please share:\n— Floor plans & specifications\n— Payment schedule\n— Site visit availability\n\nThank you!`;
 
-    const whatsappUrl = `https://wa.me/${SITE_CONFIG.ARUN_PHONE}?text=${encodeURIComponent(whatsappMessage)}`;
+    const whatsappUrl = `https://wa.me/${SITE_CONFIG.ARUN_WHATSAPP}?text=${encodeURIComponent(whatsappMessage)}`;
 
     const gallery = property.gallery || [property.image];
     const amenities = property.amenities || [];

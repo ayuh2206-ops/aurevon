@@ -8,7 +8,8 @@ const amenitiesList = [
     'Lift', 'Covered Parking', 'Visitor Parking', 'Conference Room',
     'Cafeteria', 'Fire Safety', 'Server Room', 'UPS/Generator',
     'High-Speed Internet', 'Reception/Lobby', 'Air Conditioning', 'Pantry',
-    'Loading Dock', 'Signage Rights', 'ATM', 'Metro Nearby'
+    'Loading Dock', 'Signage Rights', 'ATM', 'Metro Nearby',
+    'Swimming Pool', 'Gym', 'Clubhouse', 'Children Play Area', 'Garden', 'Balcony'
 ];
 
 const subtypes = {
@@ -16,6 +17,8 @@ const subtypes = {
     'Retail': ['High Street Shop', 'Mall Space', 'Showroom', 'Kiosk', 'Food Court'],
     'Industrial': ['Warehouse', 'Factory', 'Cold Storage', 'Godown'],
     'IT Park': ['Grade A', 'Grade B', 'SEZ', 'IT/ITES'],
+    'Residential': ['Apartment', 'Villa', 'Independent House', 'Builder Floor', 'Studio'],
+    'Plots & Lands': ['Agricultural', 'NA Plot', 'Commercial Land', 'Industrial Land', 'Residential Plot']
 };
 
 export default function AddPropertyPage() {

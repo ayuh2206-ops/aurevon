@@ -1,4 +1,5 @@
 import "./globals.css";
+import Providers from "@/components/Providers";
 
 export const metadata = {
   title: "Aurevon Realty — Premium Commercial Real Estate in Pune | 25+ Years Experience",
@@ -19,7 +20,11 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://images.unsplash.com" />
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
       </head>
-      <body>{children}</body>
+      <body>
+        <Providers>
+          {children}
+        </Providers>
+      </body>
     </html>
   );
 }

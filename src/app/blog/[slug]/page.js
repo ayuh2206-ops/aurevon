@@ -170,7 +170,7 @@ export default function BlogDetailPage() {
                                     <p className="font-serif text-xl text-[#F5F0E8] mb-3">Need Expert Advice?</p>
                                     <p className="font-sans text-xs text-[#9E968E] mb-6">Get personalised commercial property recommendations.</p>
                                     <a
-                                        href={`https://wa.me/${SITE_CONFIG.ARUN_PHONE}?text=${encodeURIComponent('Hi Arun, I just read your article "' + article.title + '" and would like to discuss commercial property investment opportunities.')}`}
+                                        href={`https://wa.me/${SITE_CONFIG.ARUN_WHATSAPP}?text=${encodeURIComponent('Hi Arun, I just read your article "' + article.title + '" and would like to discuss commercial property investment opportunities.')}`}
                                         target="_blank"
                                         rel="noreferrer"
                                         className="block w-full bg-[#25D366] text-white py-3 rounded font-sans text-xs uppercase tracking-wider hover:bg-[#20bd5a] transition-colors"

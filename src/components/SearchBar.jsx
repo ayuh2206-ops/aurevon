@@ -8,7 +8,7 @@ export default function SearchBar() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState('Buy');
     const [showTypeDropdown, setShowTypeDropdown] = useState(false);
-    const [selectedType, setSelectedType] = useState('All Commercial');
+    const [selectedType, setSelectedType] = useState('All Properties');
     const [searchQuery, setSearchQuery] = useState('');
     const [openFilter, setOpenFilter] = useState(null);
     const [selectedFilters, setSelectedFilters] = useState({
@@ -44,7 +44,12 @@ export default function SearchBar() {
     ];
     const placeholder = useTypewriter(placeholders);
 
-    const commercialTypes = ['Office Space', 'Retail/Shop', 'Showroom', 'Co-Working', 'Warehouse', 'Industrial', 'IT Park', 'Cold Storage'];
+    const propertyTypes = [
+        'Office Space', 'Retail', 'Showroom', 'Co-Working',
+        'Industrial', 'Warehouse', 'IT Park',
+        'Apartment', 'Villa', 'Independent House',
+        'Commercial Land', 'Residential Plot', 'Agricultural'
+    ];
 
     // Comprehensive list of Pune commercial/residential locations
     const puneLocations = [
@@ -62,13 +67,13 @@ export default function SearchBar() {
         'Area (sqft)': ['Under 500 sqft', '500 - 1000 sqft', '1000 - 5000 sqft', 'Above 5000 sqft'],
         'Yield %': ['Up to 5%', '5% - 7%', '7% - 9%', 'Above 9%'],
         'Construction Status': ['Under Construction', 'Ready to Move', 'New Launch'],
-        'Property Type': commercialTypes
+        'Property Type': propertyTypes
     };
 
     const handleSearch = () => {
         const queryParams = new URLSearchParams();
         if (activeTab) queryParams.append('tab', activeTab);
-        if (selectedType !== 'All Commercial') queryParams.append('type', selectedType);
+        if (selectedType !== 'All Properties') queryParams.append('type', selectedType);
         if (searchQuery.trim()) queryParams.append('q', searchQuery.trim());
 
         Object.entries(selectedFilters).forEach(([key, value]) => {
@@ -108,7 +113,7 @@ export default function SearchBar() {
                     <button
                         onClick={() => setShowTypeDropdown(!showTypeDropdown)}
                         className="w-full flex items-center justify-between font-sans text-sm text-[#F5F0E8] p-2 cursor-pointer"
-                        aria-label="Select commercial property type"
+                        aria-label="Select property type"
                     >
                         <span className="truncate">{selectedType}</span>
                         <ChevronDown className={`w-4 h-4 text-[#C9A96E] ml-2 transition-transform duration-200 ${showTypeDropdown ? 'rotate-180' : ''}`} />
@@ -117,9 +122,9 @@ export default function SearchBar() {
                     {showTypeDropdown && (
                         <div className="absolute top-full left-0 mt-4 w-[280px] sm:w-[320px] md:w-[500px] bg-[#0D0B09]/95 backdrop-blur-md border border-[#2E2A25] rounded-lg p-4 md:p-6 shadow-2xl z-50">
                             <div className="flex justify-between items-center mb-4">
-                                <p className="text-[#C9A96E] font-serif text-lg md:text-xl">Commercial Property Types</p>
+                                <p className="text-[#C9A96E] font-serif text-lg md:text-xl">Property Types</p>
                                 <button
-                                    onClick={() => setSelectedType('All Commercial')}
+                                    onClick={() => setSelectedType('All Properties')}
                                     className="text-[#7A7268] hover:text-[#C9A96E] text-xs font-sans uppercase cursor-pointer transition-colors"
                                     aria-label="Clear all property type filters"
                                 >
@@ -127,7 +132,7 @@ export default function SearchBar() {
                                 </button>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-                                {commercialTypes.map(type => (
+                                {propertyTypes.map(type => (
                                     <label key={type} className="flex items-center space-x-2 text-[#F5F0E8] text-sm font-sans cursor-pointer group">
                                         <input
                                             type="radio"
@@ -154,7 +159,7 @@ export default function SearchBar() {
                 {/* Search Input */}
                 <div className="flex-1 flex items-center w-full px-2">
                     <Search className="w-5 h-5 text-[#C9A96E] mr-3 shrink-0" />
-                    <label htmlFor="property-search" className="sr-only">Search commercial properties</label>
+                    <label htmlFor="property-search" className="sr-only">Search properties</label>
                     <input
                         id="property-search"
                         type="text"
@@ -232,8 +237,8 @@ export default function SearchBar() {
                                                 setOpenFilter(null);
                                             }}
                                             className={`w-full text-left px-4 py-2 text-sm font-sans transition-colors ${(filter === 'Property Type' ? selectedType === option : selectedFilters[filter] === option)
-                                                    ? 'text-[#C9A96E] bg-[#1A1714]'
-                                                    : 'text-[#F5F0E8] hover:text-[#C9A96E] hover:bg-[#1A1714]'
+                                                ? 'text-[#C9A96E] bg-[#1A1714]'
+                                                : 'text-[#F5F0E8] hover:text-[#C9A96E] hover:bg-[#1A1714]'
                                                 }`}
                                         >
                                             {option}

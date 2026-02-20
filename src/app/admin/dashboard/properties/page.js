@@ -1,12 +1,13 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
-import { getProperties, deleteProperty } from '@/lib/firebaseUtils';
+import { Plus, Edit2, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { getProperties, deleteProperty, updateProperty } from '@/lib/firebaseUtils';
 
 export default function AdminPropertiesPage() {
     const [properties, setProperties] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [filterTab, setFilterTab] = useState('all');
     const [isLoading, setIsLoading] = useState(true);
     const [propertyToDelete, setPropertyToDelete] = useState(null);
 
@@ -47,10 +48,39 @@ export default function AdminPropertiesPage() {
         }
     };
 
-    const filtered = properties.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.locality.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const handleApprove = async (e, id) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            await updateProperty(id, { approvalStatus: 'approved', status: 'Active', active: true });
+            await loadProperties();
+        } catch (error) {
+            console.error("Failed to approve:", error);
+        }
+    };
+
+    const handleReject = async (e, id) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            await updateProperty(id, { approvalStatus: 'rejected', status: 'Rejected', active: false });
+            await loadProperties();
+        } catch (error) {
+            console.error("Failed to reject:", error);
+        }
+    };
+
+    const filtered = properties.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (p.locality && p.locality.toLowerCase().includes(searchTerm.toLowerCase()));
+
+        if (filterTab === 'pending') {
+            return matchesSearch && p.approvalStatus === 'pending_review';
+        } else if (filterTab === 'active') {
+            return matchesSearch && (p.status === 'Active' || p.active === true);
+        }
+        return matchesSearch;
+    });
 
     return (
         <div>
@@ -64,12 +94,37 @@ export default function AdminPropertiesPage() {
                 </Link>
             </div>
 
-            {/* Search */}
-            <div className="mb-6">
+            {/* Search & Tabs */}
+            <div className="mb-6 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+                <div className="flex bg-white rounded border border-[#D9D0C0] p-1 scale-90 sm:scale-100 origin-left">
+                    <button
+                        onClick={() => setFilterTab('all')}
+                        className={`px-4 py-1.5 text-sm rounded transition-colors ${filterTab === 'all' ? 'bg-[#F5F0E8] text-[#1A1714] font-medium' : 'text-[#7A7268] hover:text-[#1A1714]'}`}
+                    >
+                        All
+                    </button>
+                    <button
+                        onClick={() => setFilterTab('active')}
+                        className={`px-4 py-1.5 text-sm rounded transition-colors ${filterTab === 'active' ? 'bg-[#F5F0E8] text-[#1A1714] font-medium' : 'text-[#7A7268] hover:text-[#1A1714]'}`}
+                    >
+                        Active
+                    </button>
+                    <button
+                        onClick={() => setFilterTab('pending')}
+                        className={`px-4 py-1.5 text-sm rounded transition-colors flex items-center gap-1 ${filterTab === 'pending' ? 'bg-[#F5F0E8] text-[#1A1714] font-medium' : 'text-[#7A7268] hover:text-[#1A1714]'}`}
+                    >
+                        Pending Review
+                        {properties.filter(p => p.approvalStatus === 'pending_review').length > 0 && (
+                            <span className="bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                                {properties.filter(p => p.approvalStatus === 'pending_review').length}
+                            </span>
+                        )}
+                    </button>
+                </div>
                 <input
                     type="text"
                     placeholder="Search properties..."
-                    className="w-full max-w-md border border-[#D9D0C0] p-3 rounded focus:border-[#C9A96E] outline-none font-sans text-sm bg-white"
+                    className="w-full md:max-w-xs border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none font-sans text-sm bg-white"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -122,6 +177,16 @@ export default function AdminPropertiesPage() {
                                         </td>
                                         <td className="p-4">
                                             <div className="flex justify-end items-center gap-2">
+                                                {p.approvalStatus === 'pending_review' && (
+                                                    <>
+                                                        <button onClick={(e) => handleApprove(e, p.id)} title="Approve" className="p-2 text-green-600 hover:bg-green-50 transition-colors rounded cursor-pointer flex items-center justify-center">
+                                                            <CheckCircle className="w-4 h-4" />
+                                                        </button>
+                                                        <button onClick={(e) => handleReject(e, p.id)} title="Reject" className="p-2 text-yellow-600 hover:bg-yellow-50 transition-colors rounded cursor-pointer flex items-center justify-center">
+                                                            <XCircle className="w-4 h-4" />
+                                                        </button>
+                                                    </>
+                                                )}
                                                 <Link href={`/admin/dashboard/properties/new?id=${p.id}`} className="p-2 text-[#7A7268] hover:bg-[#D9D0C0]/30 hover:text-[#0D0B09] transition-colors rounded cursor-pointer flex items-center justify-center">
                                                     <Edit2 className="w-4 h-4" />
                                                 </Link>

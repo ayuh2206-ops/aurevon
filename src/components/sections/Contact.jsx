@@ -20,8 +20,8 @@ export default function Contact() {
                         </p>
                         <p className="flex items-center">
                             <MessageCircle className="w-4 h-4 mr-3 text-[#C9A96E]" />
-                            <a href={`https://wa.me/${SITE_CONFIG.ARUN_PHONE}`} target="_blank" rel="noreferrer" className="hover:text-[#C9A96E] transition-colors">
-                                WhatsApp: +91 9767446655
+                            <a href={`https://wa.me/${SITE_CONFIG.ARUN_WHATSAPP}`} target="_blank" rel="noreferrer" className="hover:text-[#C9A96E] transition-colors">
+                                WhatsApp: +91 8180993030
                             </a>
                         </p>
                         <p className="flex items-center">

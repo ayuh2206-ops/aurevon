@@ -40,12 +40,12 @@ export default function Footer() {
                         © {new Date().getFullYear()} Aurevon Realty Pvt. Ltd. All Rights Reserved.
                         <br className="md:hidden" /> Designed for excellence. Built on trust.
                     </p>
-                    <div className="flex flex-wrap justify-center space-x-6">
+                    <div className="flex flex-wrap justify-center md:justify-end items-center gap-y-4 gap-x-6 pr-20 md:pr-0 mb-8 md:mb-0">
                         <Link href="/privacy-policy" className="text-[#7A7268] hover:text-[#C9A96E] font-sans text-xs uppercase tracking-wider">Privacy Policy</Link>
                         <Link href="/terms-of-service" className="text-[#7A7268] hover:text-[#C9A96E] font-sans text-xs uppercase tracking-wider">Terms</Link>
                         <a href={SITE_CONFIG.LINKEDIN_URL} target="_blank" rel="noreferrer" className="text-[#7A7268] hover:text-[#C9A96E] font-sans text-xs uppercase tracking-wider">LinkedIn</a>
-                        <a href={`https://wa.me/${SITE_CONFIG.ARUN_PHONE}`} target="_blank" rel="noreferrer" className="text-[#7A7268] hover:text-[#C9A96E] font-sans text-xs uppercase tracking-wider">WhatsApp</a>
-                        <Link href="/admin" className="text-[#2E2A25] hover:text-[#C9A96E] font-sans text-xs uppercase tracking-wider">Admin</Link>
+                        <a href={`https://wa.me/${SITE_CONFIG.ARUN_WHATSAPP}`} target="_blank" rel="noreferrer" className="text-[#7A7268] hover:text-[#C9A96E] font-sans text-xs uppercase tracking-wider">WhatsApp</a>
+                        <Link href="/admin" className="text-[#7A7268] border border-[#7A7268] hover:border-[#C9A96E] hover:text-[#C9A96E] px-2 py-0.5 rounded font-sans text-[10px] uppercase tracking-wider transition-colors">Admin Login</Link>
                     </div>
                 </div>
             </div>

@@ -1,8 +1,13 @@
 {
+  "/admin/dashboard/blogs/page": "app/admin/dashboard/blogs/page.js",
   "/admin/dashboard/page": "app/admin/dashboard/page.js",
   "/admin/dashboard/properties/new/page": "app/admin/dashboard/properties/new/page.js",
   "/admin/dashboard/properties/page": "app/admin/dashboard/properties/page.js",
   "/admin/page": "app/admin/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/login/page": "app/login/page.js",
   "/page": "app/page.js",
-  "/properties/page": "app/properties/page.js"
+  "/properties/page": "app/properties/page.js",
+  "/register/page": "app/register/page.js",
+  "/submit-property/page": "app/submit-property/page.js"
 }

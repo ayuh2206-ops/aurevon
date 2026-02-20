@@ -5,7 +5,7 @@ import { Save, RotateCcw } from 'lucide-react';
 
 const defaultSettings = {
     // Contact & Communication
-    whatsappNumber: SITE_CONFIG.ARUN_PHONE,
+    whatsappNumber: SITE_CONFIG.ARUN_WHATSAPP,
     phoneDisplay: '+91 9767 446 655',
     email: SITE_CONFIG.ADMIN_EMAIL,
     alternateEmail: '',

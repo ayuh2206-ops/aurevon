@@ -6,8 +6,8 @@ import { SITE_CONFIG } from '@/lib/config';
 function PropertyCard({ property }) {
     const handleWhatsApp = (e) => {
         e.preventDefault();
-        const message = `Hi Arun, I'm interested in the following commercial property listed on Aurevon Realty:\n\n🏢 *${property.name}*\n📍 ${property.locality}, ${property.city}\n📐 ${property.sqft} sqft\n💰 ${property.priceDisplay}\n📈 Yield: ${property.yield || 'N/A'}\n✅ ${property.status}\n🔖 Listing ID: ${property.id}\n\nCould you please share more details?`;
-        window.open(`https://wa.me/${SITE_CONFIG.ARUN_PHONE}?text=${encodeURIComponent(message)}`, '_blank');
+        const message = `Hi Arun, I'm interested in the commercial property: *${property.name}* located in ${property.locality}. Could you please share more details?`;
+        window.open(`https://wa.me/${SITE_CONFIG.ARUN_WHATSAPP}?text=${encodeURIComponent(message)}`, '_blank');
     };
 
     return (

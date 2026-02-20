@@ -43,6 +43,32 @@ export async function getProperties() {
 }
 
 /**
+ * Get properties submitted by a specific user email
+ */
+export async function getUserProperties(email) {
+    if (!email) return [];
+    try {
+        const propertiesRef = collection(db, PROPERTIES_COLLECTION);
+        const q = query(
+            propertiesRef,
+            orderBy('createdAt', 'desc')
+        );
+        const snapshot = await getDocs(q);
+
+        // Filter on client side due to needing a composite index if combining where() and orderBy()
+        const allDocs = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        return allDocs.filter(p => p.submittedBy === email);
+    } catch (error) {
+        console.error('Error fetching user properties:', error);
+        throw error;
+    }
+}
+
+/**
  * Get a single property by ID
  */
 export async function getProperty(id) {

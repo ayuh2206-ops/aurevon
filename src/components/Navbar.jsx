@@ -34,6 +34,13 @@ export default function Navbar() {
                             <span className="absolute -bottom-2 left-0 w-0 h-[1px] bg-[#C9A96E] transition-all duration-300 group-hover:w-full"></span>
                         </a>
                     ))}
+                    <Link
+                        href="/submit-property"
+                        className="group relative font-sans text-[13px] uppercase tracking-[0.15em] text-[#C9A96E]"
+                    >
+                        List Property
+                        <span className="absolute -bottom-2 left-0 w-0 h-[1px] bg-[#C9A96E] transition-all duration-300 group-hover:w-full"></span>
+                    </Link>
                 </div>
 
                 <div className="hidden md:block">
@@ -66,6 +73,13 @@ export default function Navbar() {
                             {link}
                         </a>
                     ))}
+                    <Link
+                        href="/submit-property"
+                        onClick={() => setMobileMenu(false)}
+                        className="font-serif text-4xl text-[#C9A96E] hover:text-[#F5F0E8] transition-colors"
+                    >
+                        List Property
+                    </Link>
                     <Link
                         href="/admin"
                         onClick={() => setMobileMenu(false)}

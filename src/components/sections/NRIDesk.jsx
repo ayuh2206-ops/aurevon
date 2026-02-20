@@ -37,7 +37,7 @@ export default function NRIDesk() {
                             Schedule Free Consultation
                         </a>
                         <a
-                            href={`https://wa.me/${SITE_CONFIG.ARUN_PHONE}?text=${encodeURIComponent("Hi Arun, I am an NRI and would like to explore investment opportunities in Indian real estate through Aurevon Realty.")}`}
+                            href={`https://wa.me/${SITE_CONFIG.ARUN_WHATSAPP}?text=${encodeURIComponent("Hi Arun, I am an NRI and would like to explore investment opportunities in Indian real estate through Aurevon Realty.")}`}
                             target="_blank" rel="noreferrer"
                             className="flex items-center text-[#F5F0E8] hover:text-[#25D366] transition-colors font-sans text-sm"
                         >

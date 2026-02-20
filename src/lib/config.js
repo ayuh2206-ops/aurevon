@@ -1,6 +1,7 @@
 // Site-wide configuration
 export const SITE_CONFIG = {
   ARUN_PHONE: "919767446655",
+  ARUN_WHATSAPP: "918180993030",
   RERA_NUMBER: "PRXXXXXXXXXXXXX",
   ADMIN_EMAIL: "info@aurevonrealty.in",
   LINKEDIN_URL: "https://linkedin.com/in/arundongare-64b486351",
