@@ -12,6 +12,7 @@ export default function SearchBar() {
     const [searchQuery, setSearchQuery] = useState('');
     const [openFilter, setOpenFilter] = useState(null);
     const [selectedFilters, setSelectedFilters] = useState({
+        'Location': '',
         'Budget': '',
         'Area (sqft)': '',
         'Yield %': '',
@@ -45,7 +46,18 @@ export default function SearchBar() {
 
     const commercialTypes = ['Office Space', 'Retail/Shop', 'Showroom', 'Co-Working', 'Warehouse', 'Industrial', 'IT Park', 'Cold Storage'];
 
+    // Comprehensive list of Pune commercial/residential locations
+    const puneLocations = [
+        'Akurdi', 'Aundh', 'Balewadi', 'Baner', 'Bavdhan', 'Bhosari', 'Bibwewadi', 'Camp', 'Chakan',
+        'Chinchwad', 'Deccan Gymkhana', 'Dhanori', 'Erandwane', 'FC Road', 'Fatima Nagar', 'Hadapsar',
+        'Hinjewadi', 'JM Road', 'Kalyani Nagar', 'Karve Nagar', 'Kharadi', 'Kondhwa', 'Koregaon Park',
+        'Kothrud', 'Magarpatta City', 'Mahalunge', 'Market Yard', 'Model Colony', 'Nigdi', 'Pashan',
+        'Pimpri', 'Pune Station', 'Ravet', 'Sadashiv Peth', 'SB Road', 'Shivajinagar', 'Sinhagad Road',
+        'Swargate', 'Tathawade', 'Viman Nagar', 'Vishrantwadi', 'Wagholi', 'Wakad', 'Wanowrie', 'Yerwada'
+    ];
+
     const filterOptions = {
+        'Location': puneLocations,
         'Budget': ['Under ₹50 Lacs', '₹50 Lacs - ₹1 Cr', '₹1 Cr - ₹5 Cr', 'Above ₹5 Cr'],
         'Area (sqft)': ['Under 500 sqft', '500 - 1000 sqft', '1000 - 5000 sqft', 'Above 5000 sqft'],
         'Yield %': ['Up to 5%', '5% - 7%', '7% - 9%', 'Above 9%'],
@@ -189,8 +201,8 @@ export default function SearchBar() {
                             <button
                                 onClick={() => setOpenFilter(isOpen ? null : filter)}
                                 className={`shrink-0 flex items-center px-4 py-1.5 rounded-full border text-xs font-sans uppercase tracking-wider transition-colors cursor-pointer ${displayValue !== filter || isOpen
-                                        ? 'border-[#C9A96E] bg-[#C9A96E] text-[#0D0B09]'
-                                        : 'border-[#C9A96E] text-[#F5F0E8] hover:bg-[#C9A96E]/20'
+                                    ? 'border-[#C9A96E] bg-[#C9A96E] text-[#0D0B09]'
+                                    : 'border-[#C9A96E] text-[#F5F0E8] hover:bg-[#C9A96E]/20'
                                     }`}
                             >
                                 <span className="truncate max-w-[120px]">{displayValue}</span>
@@ -199,14 +211,14 @@ export default function SearchBar() {
 
                             {/* Pill Dropdown */}
                             {isOpen && (
-                                <div className="absolute top-full left-0 mt-2 w-48 bg-[#0D0B09]/95 backdrop-blur-md border border-[#2E2A25] rounded-lg py-2 shadow-2xl z-50">
+                                <div className={`absolute top-full left-0 mt-2 ${filter === 'Location' ? 'w-64 max-h-80 overflow-y-auto scrollbar-hide' : 'w-48'} bg-[#0D0B09]/95 backdrop-blur-md border border-[#2E2A25] rounded-lg py-2 shadow-2xl z-50`}>
                                     <button
                                         onClick={() => {
                                             if (filter === 'Property Type') setSelectedType('All Commercial');
                                             else setSelectedFilters(prev => ({ ...prev, [filter]: '' }));
                                             setOpenFilter(null);
                                         }}
-                                        className="w-full text-left px-4 py-2 text-xs font-sans text-[#7A7268] hover:text-[#C9A96E] hover:bg-[#1A1714] transition-colors"
+                                        className="w-full text-left px-4 py-2 text-xs font-sans text-[#7A7268] hover:text-[#C9A96E] hover:bg-[#1A1714] transition-colors sticky top-0 bg-[#0D0B09]/95 backdrop-blur-md z-10"
                                     >
                                         Clear Selection
                                     </button>
