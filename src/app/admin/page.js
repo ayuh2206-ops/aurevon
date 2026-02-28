@@ -7,13 +7,13 @@ export default function AdminLoginPage() {
     const router = useRouter();
 
     const handleLogin = (password) => {
-        if (password === 'admin') {
+        if (password === 'Arundo@150') {
             if (typeof window !== 'undefined') {
                 localStorage.setItem('aurevon_auth', 'true');
             }
             router.push('/admin/dashboard');
         } else {
-            alert("Incorrect password. Hint: admin");
+            alert("Incorrect password.");
         }
     };
 
@@ -27,7 +27,7 @@ export default function AdminLoginPage() {
                 <h2 className="font-sans text-xl text-[#F5F0E8] mb-8 text-center">Sign In</h2>
                 <input
                     type="password"
-                    placeholder="Enter password (hint: admin)"
+                    placeholder="Enter admin password"
                     className="w-full bg-transparent border-b border-[#2E2A25] py-3 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] mb-8 placeholder:text-[#7A7268]"
                     value={pwd}
                     onChange={e => setPwd(e.target.value)}
