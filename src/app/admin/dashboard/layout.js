@@ -2,13 +2,14 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Building2, Plus, MessageCircle, Settings, LogOut, LayoutDashboard, FileText, Users } from 'lucide-react';
+import { Building2, Plus, MessageCircle, Settings, LogOut, LayoutDashboard, FileText, Users, Filter } from 'lucide-react';
 
 const sidebarLinks = [
     { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { label: 'Users', href: '/admin/dashboard/users', icon: Users },
     { label: 'Properties', href: '/admin/dashboard/properties', icon: Building2 },
     { label: 'Add Property', href: '/admin/dashboard/properties/new', icon: Plus },
+    { label: 'Search Filters', href: '/admin/dashboard/options', icon: Filter },
     { label: 'Blog Posts', href: '/admin/dashboard/blogs', icon: FileText },
     { label: 'Enquiries', href: '/admin/dashboard/enquiries', icon: MessageCircle },
     { label: 'Settings', href: '/admin/dashboard/settings', icon: Settings },

@@ -5,6 +5,7 @@ import {
     getDocs,
     getDoc,
     doc,
+    setDoc,
     updateDoc,
     deleteDoc,
     query,
@@ -170,6 +171,69 @@ export async function uploadPropertyImage(file) {
         return downloadURL;
     } catch (error) {
         console.error('Error uploading image:', error);
+        throw error;
+    }
+}
+
+// ==========================================
+// SEARCH OPTIONS (ADMIN DYNAMIC ARRAYS)
+// ==========================================
+
+const SETTINGS_COLLECTION = 'settings';
+const SEARCH_OPTIONS_DOC = 'searchOptions';
+
+const defaultSearchOptions = {
+    commercialTypes: [
+        'Office Space', 'Retail', 'Showroom', 'Co-Working',
+        'Industrial', 'Warehouse', 'IT Park', 'Commercial Land'
+    ],
+    residentialTypes: [
+        'Apartment', 'Villa', 'Independent House', 'Residential Plot', 'Agricultural'
+    ],
+    locations: [
+        'Akurdi', 'Aundh', 'Balewadi', 'Baner', 'Bavdhan', 'Bhosari', 'Bibwewadi', 'Camp', 'Chakan',
+        'Chinchwad', 'Deccan Gymkhana', 'Dhanori', 'Erandwane', 'FC Road', 'Fatima Nagar', 'Hadapsar',
+        'Hinjewadi', 'JM Road', 'Kalyani Nagar', 'Karve Nagar', 'Kharadi', 'Kondhwa', 'Koregaon Park',
+        'Kothrud', 'Magarpatta City', 'Mahalunge', 'Market Yard', 'Model Colony', 'Nigdi', 'Pashan',
+        'Pimpri', 'Pune Station', 'Ravet', 'Sadashiv Peth', 'SB Road', 'Shivajinagar', 'Sinhagad Road',
+        'Swargate', 'Tathawade', 'Viman Nagar', 'Vishrantwadi', 'Wagholi', 'Wakad', 'Wanowrie', 'Yerwada'
+    ],
+    budgets: ['Under ₹50 Lacs', '₹50 Lacs - ₹1 Cr', '₹1 Cr - ₹5 Cr', 'Above ₹5 Cr'],
+    areas: ['Under 500 sqft', '500 - 1000 sqft', '1000 - 5000 sqft', 'Above 5000 sqft'],
+    yields: ['Up to 5%', '5% - 7%', '7% - 9%', 'Above 9%'],
+    constructionStatuses: ['Under Construction', 'Ready to Move', 'New Launch']
+};
+
+/**
+ * Fetch dynamic search options from Firestore.
+ * If they don't exist yet, returns the default arrays.
+ */
+export async function getSearchOptions() {
+    try {
+        const docRef = doc(db, SETTINGS_COLLECTION, SEARCH_OPTIONS_DOC);
+        const snapshot = await getDoc(docRef);
+        if (snapshot.exists()) {
+            return { ...defaultSearchOptions, ...snapshot.data() };
+        }
+        return defaultSearchOptions;
+    } catch (error) {
+        console.error('Error fetching search options:', error);
+        return defaultSearchOptions; // Fallback so the app doesn't break
+    }
+}
+
+/**
+ * Update the dynamic search options in Firestore.
+ */
+export async function updateSearchOptions(optionsData) {
+    try {
+        const docRef = doc(db, SETTINGS_COLLECTION, SEARCH_OPTIONS_DOC);
+        // Using setDoc with merge:true securely creates the doc if it doesn't exist,
+        // or updates the specific fields if it does.
+        await setDoc(docRef, optionsData, { merge: true });
+        return true;
+    } catch (error) {
+        console.error('Error updating search options:', error);
         throw error;
     }
 }

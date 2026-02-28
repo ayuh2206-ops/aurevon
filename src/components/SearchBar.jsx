@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { Search, MapPin, Mic, ChevronDown } from 'lucide-react';
 import { useTypewriter } from '@/hooks/useTypewriter';
 
+import { getSearchOptions } from '@/lib/firebaseUtils';
+
 const commercialPlaceholders = [
     "Search 'Office space in Kharadi'",
     "Search 'Retail shop in Baner'",
@@ -18,15 +20,6 @@ const residentialPlaceholders = [
     "Search 'New Launch in Kharadi'"
 ];
 
-const commercialTypes = [
-    'Office Space', 'Retail', 'Showroom', 'Co-Working',
-    'Industrial', 'Warehouse', 'IT Park', 'Commercial Land'
-];
-
-const residentialTypes = [
-    'Apartment', 'Villa', 'Independent House', 'Residential Plot', 'Agricultural'
-];
-
 export default function SearchBar() {
     const router = useRouter();
     const [category, setCategory] = useState('Commercial');
@@ -35,6 +28,7 @@ export default function SearchBar() {
     const [selectedType, setSelectedType] = useState('All Commercial');
     const [searchQuery, setSearchQuery] = useState('');
     const [openFilter, setOpenFilter] = useState(null);
+    const [locationSearchQuery, setLocationSearchQuery] = useState(''); // New state for location search
     const [selectedFilters, setSelectedFilters] = useState({
         'Location': '',
         'Budget': '',
@@ -43,8 +37,19 @@ export default function SearchBar() {
         'Construction Status': '',
     });
 
+    const [dbOptions, setDbOptions] = useState(null); // Settings from Firestore
+
     const dropdownRef = useRef(null);
     const filtersRef = useRef(null);
+
+    // Fetch dynamic options from Firestore on mount
+    useEffect(() => {
+        async function fetchOptions() {
+            const options = await getSearchOptions();
+            setDbOptions(options);
+        }
+        fetchOptions();
+    }, []);
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -64,24 +69,18 @@ export default function SearchBar() {
         : ['Buy', 'Rent', 'New Launch', 'Projects'];
 
     const placeholder = useTypewriter(category === 'Commercial' ? commercialPlaceholders : residentialPlaceholders);
-    const propertyTypes = category === 'Commercial' ? commercialTypes : residentialTypes;
 
-    // Comprehensive list of Pune commercial/residential locations
-    const puneLocations = [
-        'Akurdi', 'Aundh', 'Balewadi', 'Baner', 'Bavdhan', 'Bhosari', 'Bibwewadi', 'Camp', 'Chakan',
-        'Chinchwad', 'Deccan Gymkhana', 'Dhanori', 'Erandwane', 'FC Road', 'Fatima Nagar', 'Hadapsar',
-        'Hinjewadi', 'JM Road', 'Kalyani Nagar', 'Karve Nagar', 'Kharadi', 'Kondhwa', 'Koregaon Park',
-        'Kothrud', 'Magarpatta City', 'Mahalunge', 'Market Yard', 'Model Colony', 'Nigdi', 'Pashan',
-        'Pimpri', 'Pune Station', 'Ravet', 'Sadashiv Peth', 'SB Road', 'Shivajinagar', 'Sinhagad Road',
-        'Swargate', 'Tathawade', 'Viman Nagar', 'Vishrantwadi', 'Wagholi', 'Wakad', 'Wanowrie', 'Yerwada'
-    ];
+    // Safely fallback if dbOptions hasn't loaded yet
+    const propertyTypes = category === 'Commercial'
+        ? (dbOptions?.commercialTypes || [])
+        : (dbOptions?.residentialTypes || []);
 
     const filterOptions = {
-        'Location': puneLocations,
-        'Budget': ['Under ₹50 Lacs', '₹50 Lacs - ₹1 Cr', '₹1 Cr - ₹5 Cr', 'Above ₹5 Cr'],
-        'Area (sqft)': ['Under 500 sqft', '500 - 1000 sqft', '1000 - 5000 sqft', 'Above 5000 sqft'],
-        'Yield %': ['Up to 5%', '5% - 7%', '7% - 9%', 'Above 9%'],
-        'Construction Status': ['Under Construction', 'Ready to Move', 'New Launch'],
+        'Location': dbOptions?.locations || [],
+        'Budget': dbOptions?.budgets || [],
+        'Area (sqft)': dbOptions?.areas || [],
+        'Yield %': dbOptions?.yields || [],
+        'Construction Status': dbOptions?.constructionStatuses || [],
         'Property Type': propertyTypes
     };
 
@@ -106,7 +105,7 @@ export default function SearchBar() {
     };
 
     return (
-        <div className="w-full max-w-5xl mx-auto bg-[#0D0B09]/85 backdrop-blur-xl rounded-xl border-t-2 border-[#C9A96E] shadow-[0_24px_60px_rgba(0,0,0,0.5)] p-4 md:p-6 relative z-20">
+        <div className="w-full max-w-5xl mx-auto bg-[#0D0B09]/85 backdrop-blur-xl rounded-xl border-t-2 border-[#C9A96E] shadow-[0_24px_60px_rgba(0,0,0,0.5)] p-4 md:p-6 relative z-50">
             {/* Category Toggle */}
             <div className="flex bg-[#1A1714] p-1 rounded-lg w-fit mb-5 mx-auto md:mx-0 border border-[#2E2A25]">
                 <button
@@ -248,7 +247,7 @@ export default function SearchBar() {
 
                             {/* Pill Dropdown */}
                             {isOpen && (
-                                <div className={`absolute top-full left-0 mt-2 ${filter === 'Location' ? 'w-64 max-h-80 overflow-y-auto scrollbar-hide' : 'w-48'} bg-[#0D0B09]/95 backdrop-blur-md border border-[#2E2A25] rounded-lg py-2 shadow-2xl z-50`}>
+                                <div className={`absolute top-full left-0 mt-2 ${filter === 'Location' ? 'w-64 max-h-80 overflow-y-auto scrollbar-hide' : 'w-48 max-h-80 overflow-y-auto scrollbar-hide'} bg-[#0D0B09]/95 backdrop-blur-md border border-[#2E2A25] rounded-lg py-2 shadow-2xl z-[60]`}>
                                     <button
                                         onClick={() => {
                                             if (filter === 'Property Type') setSelectedType(`All ${category}`);
@@ -260,7 +259,25 @@ export default function SearchBar() {
                                         Clear Selection
                                     </button>
                                     <div className="w-full h-px bg-[#2E2A25] my-1"></div>
-                                    {filterOptions[filter].map(option => (
+
+                                    {/* Local Search Input for Locations */}
+                                    {filter === 'Location' && (
+                                        <div className="px-3 pb-2 sticky top-[36px] bg-[#0D0B09]/95 backdrop-blur-md z-10">
+                                            <input
+                                                type="text"
+                                                value={locationSearchQuery}
+                                                onChange={(e) => setLocationSearchQuery(e.target.value)}
+                                                placeholder="Search location..."
+                                                className="w-full bg-[#1A1714] border border-[#2E2A25] text-sm text-[#F5F0E8] p-1.5 rounded outline-none focus:border-[#C9A96E] font-sans"
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {(filter === 'Location'
+                                        ? filterOptions[filter].filter(loc => loc.toLowerCase().includes(locationSearchQuery.toLowerCase()))
+                                        : filterOptions[filter]
+                                    ).map(option => (
                                         <button
                                             key={option}
                                             onClick={() => {
