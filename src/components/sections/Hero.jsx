@@ -5,7 +5,7 @@ export default function Hero({ isLoaded }) {
     const t = `transition-all duration-1000 ease-[cubic-bezier(0.25,1,0.5,1)] ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`;
 
     return (
-        <section className="relative min-h-screen w-full flex flex-col pt-32 pb-8 overflow-hidden bg-[#0D0B09]">
+        <section className="relative z-50 min-h-screen w-full flex flex-col pt-32 pb-8 overflow-hidden bg-[#0D0B09]">
             {/* Background Image */}
             <img
                 src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1920&q=75"
