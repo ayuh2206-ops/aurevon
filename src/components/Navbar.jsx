@@ -16,7 +16,7 @@ export default function Navbar() {
     const navLinks = ['Commercial', 'Residential', 'About', 'Services', 'NRI Desk', 'Contact'];
 
     return (
-        <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ease-in-out ${scrolled ? 'bg-[#0D0B09]/95 backdrop-blur-md h-20 border-b border-[#2E2A25]' : 'bg-gradient-to-b from-[#0D0B09]/80 to-transparent h-28'}`}>
+        <nav className={`fixed top-0 w-full z-[100] transition-all duration-500 ease-in-out ${scrolled ? 'bg-[#0D0B09]/95 backdrop-blur-md h-20 border-b border-[#2E2A25]' : 'bg-gradient-to-b from-[#0D0B09]/80 to-transparent h-28'}`}>
             <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
                 <Link href="/" className="flex flex-col">
                     <span className="font-serif text-2xl md:text-3xl text-[#C9A96E] leading-none">AUREVON</span>
