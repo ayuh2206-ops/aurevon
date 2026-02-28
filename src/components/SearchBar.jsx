@@ -247,7 +247,7 @@ export default function SearchBar() {
 
                             {/* Pill Dropdown */}
                             {isOpen && (
-                                <div className={`absolute top-full left-0 mt-2 ${filter === 'Location' ? 'w-64 max-h-80 overflow-y-auto scrollbar-hide' : 'w-48 max-h-80 overflow-y-auto scrollbar-hide'} bg-[#0D0B09]/95 backdrop-blur-md border border-[#2E2A25] rounded-lg py-2 shadow-2xl z-[60]`}>
+                                <div className={`absolute top-full left-0 mt-2 ${filter === 'Location' ? 'w-64 max-h-80 overflow-y-auto scrollbar-hide' : 'w-48 max-h-80 overflow-y-auto scrollbar-hide'} bg-[#0D0B09]/95 backdrop-blur-md border border-[#2E2A25] rounded-lg py-2 shadow-2xl z-[999]`}>
                                     <button
                                         onClick={() => {
                                             if (filter === 'Property Type') setSelectedType(`All ${category}`);
