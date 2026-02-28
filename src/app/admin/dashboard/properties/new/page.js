@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { addProperty, updateProperty, getProperty, uploadPropertyImage } from '@/lib/firebaseUtils';
+import { addProperty, updateProperty, getProperty } from '@/lib/firebaseUtils';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 
 const amenitiesList = [
     'Security (24/7)', 'CCTV', 'Intercom', 'Power Backup',
@@ -81,9 +82,9 @@ function PropertyForm() {
         try {
             let uploadedImageUrl = formData.featureImage;
 
-            // Upload image to Firebase Storage if a new file was selected
+            // Upload image to Cloudinary if a new file was selected
             if (imageFile) {
-                const downloadUrl = await uploadPropertyImage(imageFile);
+                const downloadUrl = await uploadToCloudinary(imageFile);
                 if (downloadUrl) {
                     uploadedImageUrl = downloadUrl;
                 }

@@ -1,4 +1,4 @@
-import { db, storage } from './firebase';
+import { db } from './firebase';
 import {
     collection,
     addDoc,
@@ -11,12 +11,6 @@ import {
     query,
     orderBy
 } from 'firebase/firestore';
-import {
-    ref,
-    uploadBytes,
-    getDownloadURL,
-    deleteObject
-} from 'firebase/storage';
 
 const PROPERTIES_COLLECTION = 'properties';
 
@@ -130,47 +124,13 @@ export async function deleteProperty(id, imageUrl = null) {
         const propertyRef = doc(db, PROPERTIES_COLLECTION, id);
         await deleteDoc(propertyRef);
 
-        // Try to delete the image from storage if an explicit firebase storage URL is provided
-        if (imageUrl && imageUrl.includes('firebasestorage')) {
-            try {
-                // Extract filename from URL (basic approach)
-                // Proper approach depends on exact storage path structure
-                const imageRef = ref(storage, imageUrl);
-                await deleteObject(imageRef);
-            } catch (imgError) {
-                console.warn('Could not delete associated image:', imgError);
-            }
-        }
+        // Note: The previous logic strictly relied on Firebase Storage deletion.
+        // As we have migrated to Cloudinary unsigned uploads, Cloudinary handles its own 
+        // asset retention, or they will be orphaned unless specifically managed via their backend API.
+
         return true;
     } catch (error) {
         console.error('Error deleting property:', error);
-        throw error;
-    }
-}
-
-// ==========================================
-// STORAGE UTILITIES
-// ==========================================
-
-/**
- * Upload an image file to Firebase Storage and return its public URL
- */
-export async function uploadPropertyImage(file) {
-    if (!file) return null;
-
-    try {
-        // Create a unique filename
-        const filename = `${Date.now()}_${file.name.replace(/\.[^/.]+$/, "")}`;
-        const storageRef = ref(storage, `properties/${filename}`);
-
-        // Upload the file
-        const snapshot = await uploadBytes(storageRef, file);
-
-        // Get the download URL
-        const downloadURL = await getDownloadURL(snapshot.ref);
-        return downloadURL;
-    } catch (error) {
-        console.error('Error uploading image:', error);
         throw error;
     }
 }

@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { addProperty, uploadPropertyImage } from '@/lib/firebaseUtils';
+import { addProperty } from '@/lib/firebaseUtils';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 
@@ -62,16 +63,15 @@ function SubmitPropertyPage() {
     };
 
     useEffect(() => {
-        // TEMPORARY AUTH BYPASS FOR TESTING
-        // if (!loading && !user) {
-        //     router.push('/login');
-        // }
+        if (!loading && !user) {
+            router.push('/login');
+        }
     }, [user, loading, router]);
 
     const handleSave = async (e) => {
         e.preventDefault();
 
-        if (!activeUser) return;
+        if (!user) return;
 
         console.log("Starting Submission Pipeline...");
 
@@ -88,13 +88,13 @@ function SubmitPropertyPage() {
             console.log("1. isSaving set to true. Preparing Image Upload...");
             let uploadedImageUrl = formData.featureImage;
 
-            // Upload image to Firebase Storage if a new file was selected
+            // Upload image to Cloudinary if a new file was selected
             if (imageFile) {
                 console.log(`2. Starting upload for file: ${imageFile.name}`);
 
-                // Set a 15-second timeout safeguard just in case Firebase hangs forever
-                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Firebase Image Upload Timeout")), 15000));
-                const uploadPromise = uploadPropertyImage(imageFile);
+                // Set a 15-second timeout safeguard just in case Cloudinary hangs
+                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Cloudinary Image Upload Timeout")), 15000));
+                const uploadPromise = uploadToCloudinary(imageFile);
 
                 const downloadUrl = await Promise.race([uploadPromise, timeoutPromise]);
 
@@ -133,7 +133,7 @@ function SubmitPropertyPage() {
                 possession: formData.possession,
                 status: 'Under Review',
                 approvalStatus: 'pending_review',
-                submittedBy: activeUser.email,
+                submittedBy: user.email,
                 constructionStatus: formData.constructionStatus,
                 yield: formData.yieldPercent || null,
                 yieldPercent: formData.yieldPercent,
@@ -179,12 +179,9 @@ function SubmitPropertyPage() {
         </button>
     );
 
-    if (loading) {
+    if (loading || !user) {
         return <div className="min-h-screen py-32 flex justify-center bg-[#F5F0E8]"><div className="w-8 h-8 border-2 border-[#C9A96E] border-t-transparent rounded-full animate-spin"></div></div>;
     }
-
-    // Mock user for testing
-    const activeUser = user || { email: 'test_subagent@aurevon.com' };
 
     return (
         <div className="min-h-screen bg-[#F5F0E8]">
