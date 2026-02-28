@@ -2,12 +2,12 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 
 export const metadata = {
-  title: "Aurevon Realty — Premium Commercial Real Estate in Pune | 25+ Years Experience",
-  description: "Aurevon Realty Pvt. Ltd. — Pune's most trusted commercial real estate partner since 2001. Office spaces, retail shops, co-working & pre-leased investments. NRI advisory. RERA registered. 1,000+ deals closed.",
-  keywords: "commercial property Pune, office space Pune, retail shop Pune, IT park investment, co-working space, NRI commercial investment India, RERA registered broker, Baner commercial, Kharadi office, Hinjewadi IT park",
+  title: "Aurevon Realty — Premium Real Estate in Pune | 25+ Years Experience",
+  description: "Aurevon Realty Pvt. Ltd. — Pune's most trusted real estate partner since 2001. Premium homes, office spaces, retail shops & investments. NRI advisory. RERA registered. 1,000+ deals closed.",
+  keywords: "real estate Pune, luxury homes Pune, commercial property Pune, office space Pune, retail shop Pune, NRI investment India, RERA registered broker",
   openGraph: {
-    title: "Aurevon Realty — Where Vision Meets Commerce",
-    description: "25 years of curating exceptional commercial properties across India. 8%+ average yields.",
+    title: "Aurevon Realty — Where Vision Meets Reality",
+    description: "25 years of curating exceptional properties across India.",
     type: "website",
   },
 };

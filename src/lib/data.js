@@ -148,11 +148,11 @@ export const cities = {
 };
 
 export const services = [
-    { title: "Office Space Sales", desc: "Premium office spaces, IT parks & co-working setups in Pune's key commercial corridors.", iconName: "Building2" },
-    { title: "Retail & Shop Leasing", desc: "High-street retail, showrooms & commercial shops with strong footfall potential.", iconName: "Store" },
-    { title: "NRI Commercial Advisory", desc: "Remote commercial property acquisition with virtual tours & legal coordination.", iconName: "Globe" },
+    { title: "Commercial Space Sales", desc: "Premium office spaces, IT parks & co-working setups in Pune's key business corridors.", iconName: "Building2" },
+    { title: "Residential & Retail", desc: "High-street retail, showrooms, and luxury homes with strong appreciation potential.", iconName: "Store" },
+    { title: "NRI Investment Advisory", desc: "Remote property acquisition with virtual tours & legal coordination.", iconName: "Globe" },
     { title: "Yield & ROI Analysis", desc: "Data-driven market assessment and rental yield projections using 25 years of local intelligence.", iconName: "TrendingUp" },
-    { title: "Documentation & RERA", desc: "End-to-end paperwork, agreement drafting, legal & RERA compliance for commercial deals.", iconName: "FileText" },
+    { title: "Documentation & RERA", desc: "End-to-end paperwork, agreement drafting, legal & RERA compliance for all deals.", iconName: "FileText" },
     { title: "Post-Sale Management", desc: "Tenant acquisition, lease management, and property maintenance coordination.", iconName: "CheckCircle2" }
 ];
 
@@ -300,8 +300,8 @@ export const blogArticles = [
 ];
 
 export const nriProcessSteps = [
-    { step: 1, title: "Consultation Call (Free)", desc: "Discuss budget, preferred commercial zones, and investment goals." },
-    { step: 2, title: "Virtual Property Shortlisting", desc: "Curated list of commercial properties with high-res virtual walkthroughs." },
+    { step: 1, title: "Consultation Call (Free)", desc: "Discuss budget, preferred zones, and investment goals." },
+    { step: 2, title: "Virtual Property Shortlisting", desc: "Curated list of premium properties with high-res virtual walkthroughs." },
     { step: 3, title: "Legal Due Diligence", desc: "Our legal team verifies all titles, RERA approvals, and lease structures." },
     { step: 4, title: "Agreement & Payment", desc: "Secure digital signatures and guided forex routing for NRI investors." },
     { step: 5, title: "Registration & Handover", desc: "Power of Attorney registration, tenant acquisition, and property management." }
@@ -310,6 +310,6 @@ export const nriProcessSteps = [
 export const stats = [
     { num: "1,000+", label: "Successful Deals" },
     { num: "25+", label: "Years Experience" },
-    { num: "8%+", label: "Avg. Yield on Commercial" },
+    { num: "8%+", label: "Avg. Commercial Yield" },
     { num: "Pan-India", label: "Markets Covered" }
 ];

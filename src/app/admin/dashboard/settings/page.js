@@ -115,7 +115,7 @@ export default function AdminSettingsPage() {
             fields: [
                 { key: 'founderName', label: 'Founder Name', placeholder: 'Arun Dongare' },
                 { key: 'founderTitle', label: 'Title / Role', placeholder: 'Founder & Principal Broker' },
-                { key: 'founderSubtitle', label: 'Subtitle / Tagline', placeholder: '25 Years of Commercial Real Estate Mastery' },
+                { key: 'founderSubtitle', label: 'Subtitle / Tagline', placeholder: '25 Years of Real Estate Mastery' },
             ]
         },
         {

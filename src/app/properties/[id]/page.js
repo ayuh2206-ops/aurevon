@@ -178,7 +178,7 @@ export default function PropertyDetailsPage({ params }) {
                                     <div>
                                         <h4 className="text-[#F5F0E8] font-medium mb-1">Aurevon Realty Insight</h4>
                                         <p className="text-[#8B847A] text-sm leading-relaxed">
-                                            This {property.subtype?.toLowerCase() || 'property'} located in {property.locality} boasts a competitive {property.yield}% average yield historically for this micro-market. Ideal for {property.type === 'Commercial' ? 'HNI investors looking for capital appreciation and steady rental income.' : 'families looking for premium living spaces.'}
+                                            This {property.subtype?.toLowerCase() || 'property'} located in {property.locality} is a premium asset in this micro-market. Ideal for {property.type === 'Commercial' ? 'investors looking for steady rental income and capital appreciation.' : 'those looking for premium living spaces or long-term growth.'}
                                         </p>
                                     </div>
                                 </div>

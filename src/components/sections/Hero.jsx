@@ -20,17 +20,17 @@ export default function Hero({ isLoaded }) {
             <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-6 w-full flex-1 flex flex-col justify-center pb-8">
                 <div className="max-w-3xl">
                     <span className={`block font-sans text-xs md:text-sm text-[#C9A96E] uppercase tracking-[0.2em] mb-4 ${t} delay-100`}>
-                        Pune&apos;s Most Trusted Commercial Real Estate Partner Since 2001
+                        Pune&apos;s Most Trusted Real Estate Partner Since 2001
                     </span>
                     <h1 className={`font-serif text-5xl sm:text-6xl md:text-8xl lg:text-[110px] leading-[1.05] text-[#F5F0E8] font-light mb-6 ${t} delay-200`}>
-                        Where Vision <br /> Meets Commerce.
+                        Where Vision <br /> Meets Reality.
                     </h1>
                     <p className={`font-sans text-[#F5F0E8]/80 max-w-lg text-sm md:text-base leading-relaxed mb-10 ${t} delay-300`}>
-                        25 years of curating exceptional commercial properties across India — offices, retail, co-working. 1,000+ deals closed. 8%+ average yields. RERA registered.
+                        25 years of curating exceptional properties across India — premium homes, offices, retail, and co-working spaces. 1,000+ deals closed. RERA registered.
                     </p>
                     <div className={`flex flex-col sm:flex-row gap-4 mb-8 ${t} delay-[400ms]`}>
-                        <a href="#properties" className="bg-[#C9A96E] text-[#0D0B09] px-8 py-3.5 font-sans text-xs uppercase tracking-widest hover:bg-[#F5F0E8] transition-colors shadow-lg shadow-[#C9A96E]/20 text-center">
-                            Explore Commercial Spaces
+                        <a href="/properties" className="bg-[#C9A96E] text-[#0D0B09] px-8 py-3.5 font-sans text-xs uppercase tracking-widest hover:bg-[#F5F0E8] transition-colors shadow-lg shadow-[#C9A96E]/20 text-center">
+                            Explore Properties
                         </a>
                         <a href="#nri-desk" className="border border-[#C9A96E] text-[#C9A96E] px-8 py-3.5 font-sans text-xs uppercase tracking-widest hover:bg-[#C9A96E] hover:text-[#0D0B09] transition-colors text-center">
                             NRI Investment Desk
