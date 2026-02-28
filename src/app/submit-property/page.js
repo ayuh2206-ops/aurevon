@@ -69,7 +69,15 @@ function SubmitPropertyPage() {
 
     const handleSave = async (e) => {
         e.preventDefault();
+
         if (!user) return;
+
+        // Custom Validation for Feature Image
+        if (!imageFile && !formData.featureImage) {
+            setOpenSection('media');
+            alert('Please upload a Feature Image in the "Media & Description" section before submitting.');
+            return;
+        }
 
         setIsSaving(true);
         try {
@@ -370,7 +378,7 @@ function SubmitPropertyPage() {
 
                     {/* Actions */}
                     <div className="flex flex-wrap gap-4 pt-8 border-t border-[#D9D0C0] mt-6">
-                        <button type="submit" disabled={isSaving || !imageFile} className="px-6 py-2.5 bg-[#C9A96E] text-[#0D0B09] rounded text-sm uppercase tracking-wider cursor-pointer hover:bg-[#F5F0E8] transition-colors disabled:opacity-50 w-full sm:w-auto">
+                        <button type="submit" disabled={isSaving} className="px-6 py-2.5 bg-[#C9A96E] text-[#0D0B09] rounded text-sm uppercase tracking-wider cursor-pointer hover:bg-[#F5F0E8] transition-colors disabled:opacity-50 w-full sm:w-auto">
                             {isSaving ? 'Submitting...' : 'Submit for Review'}
                         </button>
                     </div>
