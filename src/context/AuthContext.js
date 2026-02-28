@@ -9,7 +9,8 @@ import {
     GoogleAuthProvider,
     signInWithPopup
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 
 const AuthContext = createContext({});
 
@@ -32,14 +33,41 @@ export const AuthProvider = ({ children }) => {
         return signInWithEmailAndPassword(auth, email, password);
     };
 
-    const signup = (email, password) => {
-        return createUserWithEmailAndPassword(auth, email, password);
+    const signup = async (email, password, name) => {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Save user to Firestore
+        await setDoc(doc(db, 'users', user.uid), {
+            name: name || '',
+            email: user.email,
+            createdAt: serverTimestamp(),
+            role: 'user'
+        });
+
+        return userCredential;
     };
 
-    const loginWithGoogle = () => {
+    const loginWithGoogle = async () => {
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ prompt: 'select_account' });
-        return signInWithPopup(auth, provider);
+        const userCredential = await signInWithPopup(auth, provider);
+        const user = userCredential.user;
+
+        // Check if user exists, if not create them
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (!userDoc.exists()) {
+            await setDoc(userDocRef, {
+                name: user.displayName || '',
+                email: user.email,
+                createdAt: serverTimestamp(),
+                role: 'user'
+            });
+        }
+
+        return userCredential;
     };
 
     const logout = () => {

@@ -31,8 +31,7 @@ export default function RegisterPage() {
 
         setIsLoading(true);
         try {
-            await signup(email, password);
-            // In a real app, we'd also save the user's `name` to a Firestore 'users' collection here
+            await signup(email, password, name);
             router.push('/');
         } catch (err) {
             console.error('Registration error:', err);
