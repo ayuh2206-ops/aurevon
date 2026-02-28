@@ -54,18 +54,20 @@ function PropertyCard({ property }) {
     );
 }
 
-export default function Featured({ properties }) {
+export default function Featured({ properties, categoryLabel, title, linkTo, bgClass }) {
+    if (!properties || properties.length === 0) return null;
+
     return (
-        <section id="properties" className="py-24 bg-[#F5F0E8]">
+        <section id="properties" className={`py-24 ${bgClass || 'bg-[#F5F0E8]'}`}>
             <div className="max-w-7xl mx-auto px-6">
                 <div className="flex flex-col md:flex-row justify-between items-end mb-16">
                     <div>
-                        <span className="block font-sans text-xs text-[#C9A96E] uppercase tracking-[0.2em] mb-4">Commercial Portfolio</span>
-                        <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-[#1A1714]">Spaces That<br />Drive Business</h2>
+                        <span className="block font-sans text-xs text-[#C9A96E] uppercase tracking-[0.2em] mb-4">{categoryLabel || 'Commercial Portfolio'}</span>
+                        <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-[#1A1714] whitespace-pre-line">{title || 'Spaces That\nDrive Business'}</h2>
                     </div>
-                    <a href="#" className="mt-6 md:mt-0 font-sans text-[13px] text-[#8B4A2F] uppercase tracking-wider flex items-center hover:text-[#C9A96E] transition-colors">
+                    <Link href={linkTo || '/properties?category=Commercial'} className="mt-6 md:mt-0 font-sans text-[13px] text-[#8B4A2F] uppercase tracking-wider flex items-center hover:text-[#C9A96E] transition-colors">
                         View All Properties <ArrowRight className="w-4 h-4 ml-2" />
-                    </a>
+                    </Link>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {properties.filter(p => p.featured).slice(0, 6).map((prop) => (

@@ -18,15 +18,17 @@ import { getProperties } from '@/lib/firebaseUtils';
 
 export default function HomePage() {
   const [loading, setLoading] = useState(true);
-  const [featuredProps, setFeaturedProps] = useState([]);
+  const [featuredCommProps, setFeaturedCommProps] = useState([]);
+  const [featuredResProps, setFeaturedResProps] = useState([]);
 
   useEffect(() => {
     async function loadData() {
       try {
         const data = await getProperties();
         // Filter only active and featured properties
-        const featured = data.filter(p => p.active && p.featured).slice(0, 6);
-        setFeaturedProps(featured);
+        const featured = data.filter(p => p.active && p.featured);
+        setFeaturedCommProps(featured.filter(p => p.type !== 'Residential').slice(0, 6));
+        setFeaturedResProps(featured.filter(p => p.type === 'Residential').slice(0, 6));
       } catch (error) {
         console.error("Failed to fetch featured properties:", error);
       }
@@ -43,7 +45,20 @@ export default function HomePage() {
       <main>
         <Hero isLoaded={!loading} />
         <Stats />
-        <Featured properties={featuredProps} />
+        <Featured
+          properties={featuredCommProps}
+          categoryLabel="Commercial Portfolio"
+          title={"Spaces That\nDrive Business"}
+          linkTo="/properties?category=Commercial"
+          bgClass="bg-[#F5F0E8]"
+        />
+        <Featured
+          properties={featuredResProps}
+          categoryLabel="Residential Portfolio"
+          title={"Homes That\nInspire Living"}
+          linkTo="/properties?category=Residential"
+          bgClass="bg-white border-t border-[#D9D0C0]"
+        />
         <About />
         <Services />
         <Locations />

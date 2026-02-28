@@ -13,7 +13,7 @@ export default function Navbar() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    const navLinks = ['Properties', 'About', 'Services', 'NRI Desk', 'Contact'];
+    const navLinks = ['Commercial', 'Residential', 'About', 'Services', 'NRI Desk', 'Contact'];
 
     return (
         <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ease-in-out ${scrolled ? 'bg-[#0D0B09]/95 backdrop-blur-md h-20 border-b border-[#2E2A25]' : 'bg-gradient-to-b from-[#0D0B09]/80 to-transparent h-28'}`}>
@@ -24,16 +24,20 @@ export default function Navbar() {
                 </Link>
 
                 <div className="hidden md:flex items-center space-x-8">
-                    {navLinks.map(link => (
-                        <a
-                            key={link}
-                            href={`#${link.toLowerCase().replace(' ', '-')}`}
-                            className="group relative font-sans text-[13px] uppercase tracking-[0.15em] text-[#F5F0E8]"
-                        >
-                            {link}
-                            <span className="absolute -bottom-2 left-0 w-0 h-[1px] bg-[#C9A96E] transition-all duration-300 group-hover:w-full"></span>
-                        </a>
-                    ))}
+                    {navLinks.map(link => {
+                        const isCategory = link === 'Commercial' || link === 'Residential';
+                        const href = isCategory ? `/properties?category=${link}` : `/#${link.toLowerCase().replace(' ', '-')}`;
+                        return (
+                            <Link
+                                key={link}
+                                href={href}
+                                className="group relative font-sans text-[13px] uppercase tracking-[0.15em] text-[#F5F0E8]"
+                            >
+                                {link}
+                                <span className="absolute -bottom-2 left-0 w-0 h-[1px] bg-[#C9A96E] transition-all duration-300 group-hover:w-full"></span>
+                            </Link>
+                        );
+                    })}
                     <Link
                         href="/submit-property"
                         className="group relative font-sans text-[13px] uppercase tracking-[0.15em] text-[#C9A96E]"
@@ -63,16 +67,20 @@ export default function Navbar() {
                     <button className="absolute top-8 right-8 text-[#C9A96E]" onClick={() => setMobileMenu(false)} aria-label="Close menu">
                         <X className="w-8 h-8" />
                     </button>
-                    {navLinks.map(link => (
-                        <a
-                            key={link}
-                            href={`#${link.toLowerCase().replace(' ', '-')}`}
-                            onClick={() => setMobileMenu(false)}
-                            className="font-serif text-4xl text-[#F5F0E8] hover:text-[#C9A96E] transition-colors"
-                        >
-                            {link}
-                        </a>
-                    ))}
+                    {navLinks.map(link => {
+                        const isCategory = link === 'Commercial' || link === 'Residential';
+                        const href = isCategory ? `/properties?category=${link}` : `/#${link.toLowerCase().replace(' ', '-')}`;
+                        return (
+                            <Link
+                                key={link}
+                                href={href}
+                                onClick={() => setMobileMenu(false)}
+                                className="font-serif text-4xl text-[#F5F0E8] hover:text-[#C9A96E] transition-colors"
+                            >
+                                {link}
+                            </Link>
+                        );
+                    })}
                     <Link
                         href="/submit-property"
                         onClick={() => setMobileMenu(false)}

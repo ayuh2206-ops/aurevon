@@ -20,6 +20,7 @@ function PropertiesContent() {
     const filterArea = searchParams.get('areasqft');
     const filterYield = searchParams.get('yield');
     const filterStatus = searchParams.get('constructionstatus');
+    const category = searchParams.get('category');
 
     useEffect(() => {
         const fetchProperties = async () => {
@@ -38,6 +39,15 @@ function PropertiesContent() {
 
     useEffect(() => {
         let results = allProperties.filter(p => p.active);
+
+        // Filter by Category
+        if (category) {
+            if (category === 'Residential') {
+                results = results.filter(p => p.type === 'Residential');
+            } else if (category === 'Commercial') {
+                results = results.filter(p => p.type !== 'Residential');
+            }
+        }
 
         // Filter by tab (Buy/Lease etc)
         if (tab) {
@@ -95,12 +105,13 @@ function PropertiesContent() {
                     <div className="flex flex-wrap gap-2 text-sm font-sans">
                         <span className="text-[#7A7268] mr-2 flex items-center">Active Filters:</span>
                         {q && <span className="px-3 py-1 rounded-full bg-[#1A1714] border border-[#2E2A25] text-[#C9A96E]">Search: "{q}"</span>}
+                        {category && <span className="px-3 py-1 rounded-full bg-[#1A1714] border border-[#2E2A25] text-[#C9A96E]">Portfolio: {category}</span>}
                         {filterLocation && <span className="px-3 py-1 rounded-full bg-[#1A1714] border border-[#2E2A25] text-[#C9A96E]">Location: {filterLocation}</span>}
                         {filterType && <span className="px-3 py-1 rounded-full bg-[#1A1714] border border-[#2E2A25] text-[#C9A96E]">Type: {filterType}</span>}
-                        {tab && <span className="px-3 py-1 rounded-full bg-[#1A1714] border border-[#2E2A25] text-[#C9A96E]">Category: {tab}</span>}
+                        {tab && <span className="px-3 py-1 rounded-full bg-[#1A1714] border border-[#2E2A25] text-[#C9A96E]">Intent: {tab}</span>}
                         {filterStatus && <span className="px-3 py-1 rounded-full bg-[#1A1714] border border-[#2E2A25] text-[#C9A96E]">Status: {filterStatus}</span>}
 
-                        {(q || filterLocation || filterType || filterStatus || tab !== 'Buy') && (
+                        {(q || category || filterLocation || filterType || filterStatus || tab !== 'Buy') && (
                             <Link href="/properties" className="px-3 py-1 text-[#7A7268] hover:text-[#C9A96E] transition-colors underline decoration-[#7A7268] hover:decoration-[#C9A96E] underline-offset-4">
                                 Clear All
                             </Link>

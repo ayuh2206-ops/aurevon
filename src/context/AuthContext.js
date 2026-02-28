@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import {
     onAuthStateChanged,
     signInWithEmailAndPassword,
@@ -38,6 +38,7 @@ export const AuthProvider = ({ children }) => {
 
     const loginWithGoogle = () => {
         const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
         return signInWithPopup(auth, provider);
     };
 

@@ -1,12 +1,23 @@
 {
   "/_global-error/page": "/_global-error",
   "/_not-found/page": "/_not-found",
+  "/admin/dashboard/blogs/page": "/admin/dashboard/blogs",
   "/admin/dashboard/enquiries/page": "/admin/dashboard/enquiries",
   "/admin/dashboard/page": "/admin/dashboard",
   "/admin/dashboard/properties/new/page": "/admin/dashboard/properties/new",
   "/admin/dashboard/properties/page": "/admin/dashboard/properties",
   "/admin/dashboard/settings/page": "/admin/dashboard/settings",
   "/admin/page": "/admin",
+  "/blog/[slug]/page": "/blog/[slug]",
+  "/blog/page": "/blog",
+  "/dashboard/page": "/dashboard",
   "/favicon.ico/route": "/favicon.ico",
-  "/page": "/"
+  "/login/page": "/login",
+  "/page": "/",
+  "/privacy-policy/page": "/privacy-policy",
+  "/properties/[id]/page": "/properties/[id]",
+  "/properties/page": "/properties",
+  "/register/page": "/register",
+  "/submit-property/page": "/submit-property",
+  "/terms-of-service/page": "/terms-of-service"
 }

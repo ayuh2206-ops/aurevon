@@ -43,15 +43,14 @@ export default function RegisterPage() {
     };
 
     const handleGoogleRegister = async () => {
-        setError('');
-        setIsLoading(true);
+        // Run popup synchronously before state changes to avoid popup blockers
         try {
             await loginWithGoogle();
+            setIsLoading(true);
             router.push('/');
         } catch (err) {
             console.error('Google registration error:', err);
-            setError('Failed to sign up with Google.');
-        } finally {
+            setError(`Failed to sign up with Google: ${err.message || err.code || 'Unknown error'}`);
             setIsLoading(false);
         }
     };

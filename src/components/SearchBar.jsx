@@ -4,11 +4,35 @@ import { useRouter } from 'next/navigation';
 import { Search, MapPin, Mic, ChevronDown } from 'lucide-react';
 import { useTypewriter } from '@/hooks/useTypewriter';
 
+const commercialPlaceholders = [
+    "Search 'Office space in Kharadi'",
+    "Search 'Retail shop in Baner'",
+    "Search 'Pre-leased office 9% yield'",
+    "Search 'Co-working space Hinjewadi'"
+];
+
+const residentialPlaceholders = [
+    "Search 'Apartment in Baner'",
+    "Search 'Villa in Wakad'",
+    "Search 'Independent House in Viman Nagar'",
+    "Search 'New Launch in Kharadi'"
+];
+
+const commercialTypes = [
+    'Office Space', 'Retail', 'Showroom', 'Co-Working',
+    'Industrial', 'Warehouse', 'IT Park', 'Commercial Land'
+];
+
+const residentialTypes = [
+    'Apartment', 'Villa', 'Independent House', 'Residential Plot', 'Agricultural'
+];
+
 export default function SearchBar() {
     const router = useRouter();
+    const [category, setCategory] = useState('Commercial');
     const [activeTab, setActiveTab] = useState('Buy');
     const [showTypeDropdown, setShowTypeDropdown] = useState(false);
-    const [selectedType, setSelectedType] = useState('All Properties');
+    const [selectedType, setSelectedType] = useState('All Commercial');
     const [searchQuery, setSearchQuery] = useState('');
     const [openFilter, setOpenFilter] = useState(null);
     const [selectedFilters, setSelectedFilters] = useState({
@@ -35,21 +59,12 @@ export default function SearchBar() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const tabs = ['Buy', 'Lease', 'New Launch', 'Pre-Leased', 'Projects'];
-    const placeholders = [
-        "Search 'Office space in Kharadi'",
-        "Search 'Retail shop in Baner'",
-        "Search 'Pre-leased office 9% yield'",
-        "Search 'Co-working space Hinjewadi'"
-    ];
-    const placeholder = useTypewriter(placeholders);
+    const tabs = category === 'Commercial'
+        ? ['Buy', 'Lease', 'New Launch', 'Pre-Leased', 'Projects']
+        : ['Buy', 'Rent', 'New Launch', 'Projects'];
 
-    const propertyTypes = [
-        'Office Space', 'Retail', 'Showroom', 'Co-Working',
-        'Industrial', 'Warehouse', 'IT Park',
-        'Apartment', 'Villa', 'Independent House',
-        'Commercial Land', 'Residential Plot', 'Agricultural'
-    ];
+    const placeholder = useTypewriter(category === 'Commercial' ? commercialPlaceholders : residentialPlaceholders);
+    const propertyTypes = category === 'Commercial' ? commercialTypes : residentialTypes;
 
     // Comprehensive list of Pune commercial/residential locations
     const puneLocations = [
@@ -72,8 +87,9 @@ export default function SearchBar() {
 
     const handleSearch = () => {
         const queryParams = new URLSearchParams();
+        queryParams.append('category', category);
         if (activeTab) queryParams.append('tab', activeTab);
-        if (selectedType !== 'All Properties') queryParams.append('type', selectedType);
+        if (selectedType && !selectedType.startsWith('All ')) queryParams.append('type', selectedType);
         if (searchQuery.trim()) queryParams.append('q', searchQuery.trim());
 
         Object.entries(selectedFilters).forEach(([key, value]) => {
@@ -91,6 +107,22 @@ export default function SearchBar() {
 
     return (
         <div className="w-full max-w-5xl mx-auto bg-[#0D0B09]/85 backdrop-blur-xl rounded-xl border-t-2 border-[#C9A96E] shadow-[0_24px_60px_rgba(0,0,0,0.5)] p-4 md:p-6 relative z-20">
+            {/* Category Toggle */}
+            <div className="flex bg-[#1A1714] p-1 rounded-lg w-fit mb-5 mx-auto md:mx-0 border border-[#2E2A25]">
+                <button
+                    onClick={() => { setCategory('Commercial'); setSelectedType('All Commercial'); setActiveTab('Buy'); }}
+                    className={`px-6 py-1.5 rounded-md font-sans text-sm transition-colors ${category === 'Commercial' ? 'bg-[#3E3A35] text-[#F5F0E8]' : 'text-[#7A7268] hover:text-[#F5F0E8] cursor-pointer'}`}
+                >
+                    Commercial
+                </button>
+                <button
+                    onClick={() => { setCategory('Residential'); setSelectedType('All Residential'); setActiveTab('Buy'); }}
+                    className={`px-6 py-1.5 rounded-md font-sans text-sm transition-colors ${category === 'Residential' ? 'bg-[#3E3A35] text-[#F5F0E8]' : 'text-[#7A7268] hover:text-[#F5F0E8] cursor-pointer'}`}
+                >
+                    Residential
+                </button>
+            </div>
+
             {/* Tabs */}
             <div className="flex overflow-x-auto space-x-6 border-b border-[#2E2A25] pb-3 mb-4 scrollbar-hide">
                 {tabs.map(tab => (
@@ -124,7 +156,7 @@ export default function SearchBar() {
                             <div className="flex justify-between items-center mb-4">
                                 <p className="text-[#C9A96E] font-serif text-lg md:text-xl">Property Types</p>
                                 <button
-                                    onClick={() => setSelectedType('All Properties')}
+                                    onClick={() => setSelectedType(`All ${category}`)}
                                     className="text-[#7A7268] hover:text-[#C9A96E] text-xs font-sans uppercase cursor-pointer transition-colors"
                                     aria-label="Clear all property type filters"
                                 >
@@ -196,7 +228,7 @@ export default function SearchBar() {
                     let displayValue = filter;
 
                     if (filter === 'Property Type') {
-                        if (selectedType !== 'All Commercial') displayValue = selectedType;
+                        if (selectedType && !selectedType.startsWith('All ')) displayValue = selectedType;
                     } else if (selectedFilters[filter]) {
                         displayValue = selectedFilters[filter];
                     }
@@ -219,7 +251,7 @@ export default function SearchBar() {
                                 <div className={`absolute top-full left-0 mt-2 ${filter === 'Location' ? 'w-64 max-h-80 overflow-y-auto scrollbar-hide' : 'w-48'} bg-[#0D0B09]/95 backdrop-blur-md border border-[#2E2A25] rounded-lg py-2 shadow-2xl z-50`}>
                                     <button
                                         onClick={() => {
-                                            if (filter === 'Property Type') setSelectedType('All Commercial');
+                                            if (filter === 'Property Type') setSelectedType(`All ${category}`);
                                             else setSelectedFilters(prev => ({ ...prev, [filter]: '' }));
                                             setOpenFilter(null);
                                         }}

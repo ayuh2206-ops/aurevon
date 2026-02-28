@@ -14,7 +14,7 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (user) {
-            router.push('/admin/dashboard'); // Or home, or submit-property
+            router.push('/');
         }
     }, [user, router]);
 
@@ -34,15 +34,14 @@ export default function LoginPage() {
     };
 
     const handleGoogleLogin = async () => {
-        setError('');
-        setIsLoading(true);
+        // Run popup synchronously before any state updates to prevent browser popup blockers
         try {
             await loginWithGoogle();
+            setIsLoading(true); // Only set loading after popup opens successfully
             router.push('/');
         } catch (err) {
             console.error('Google login error:', err);
-            setError('Failed to login with Google.');
-        } finally {
+            setError(`Failed to login with Google: ${err.message || err.code || 'Unknown error'}`);
             setIsLoading(false);
         }
     };
