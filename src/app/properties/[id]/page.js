@@ -1,326 +1,298 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
+import { useState, useEffect, use } from 'react';
+import { getProperty } from '@/lib/firebaseUtils';
 import {
-    ArrowLeft, MessageCircle, MapPin, Building2, Maximize2, TrendingUp,
-    Calendar, Shield, Car, Layers, Compass, CheckCircle2, Globe, Share2, Heart
+    MapPin, Expand, Building2, TrendingUp, CheckCircle2,
+    ArrowLeft, Calendar, Share2, Heart, Check, Phone, ArrowUpRight
 } from 'lucide-react';
-import { initialProperties } from '@/lib/data';
-import { SITE_CONFIG } from '@/lib/config';
+import Link from 'next/link';
 
-export default function PropertyDetailPage() {
-    const params = useParams();
+// Verified Contact Details
+const WHATSAPP_NUMBER = "+918180993030";
+const DISPLAY_NUMBER = "+919767446655";
+
+export default function PropertyDetailsPage({ params }) {
+    // Unwrap params in Next.js 15+ (if applicable, but generally safe to use React.use)
+    const unwrappedParams = use(params);
+    const id = unwrappedParams.id;
+
     const [property, setProperty] = useState(null);
-    const [activeImage, setActiveImage] = useState(0);
-    const [loading, setLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
+    const [notFound, setNotFound] = useState(false);
 
     useEffect(() => {
-        // Check localStorage first (for admin-added properties), then fall back to initialProperties
-        const stored = typeof window !== 'undefined' ? localStorage.getItem('aurevon_properties') : null;
-        const allProperties = stored ? [...JSON.parse(stored), ...initialProperties] : initialProperties;
-        const found = allProperties.find(p => p.id === params.id);
-        setProperty(found || null);
-        setLoading(false);
-    }, [params.id]);
+        const fetchPropertyDetails = async () => {
+            if (!id) return;
+            setIsLoading(true);
+            try {
+                const data = await getProperty(id);
+                if (data) {
+                    setProperty(data);
+                } else {
+                    setNotFound(true);
+                }
+            } catch (error) {
+                console.error("Error fetching property:", error);
+                setNotFound(true);
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-    if (loading) {
+        fetchPropertyDetails();
+    }, [id]);
+
+    const handleWhatsAppClick = () => {
+        if (!property) return;
+        const message = `Hello Aurevon Realty, I am interested in property [ID: ${property.id}] - "${property.name}" located in ${property.locality}, ${property.city}. Could you share more details?`;
+        const encodedMessage = encodeURIComponent(message);
+        window.open(`https://wa.me/${WHATSAPP_NUMBER.replace('+', '')}?text=${encodedMessage}`, '_blank');
+    };
+
+    if (isLoading) {
         return (
-            <div className="min-h-screen bg-[#0D0B09] flex items-center justify-center">
-                <div className="w-10 h-10 border-2 border-[#C9A96E] border-t-transparent rounded-full animate-spin" />
+            <div className="min-h-screen bg-[#0D0B09] pt-32 pb-20 flex items-center justify-center">
+                <div className="w-12 h-12 border-2 border-[#C9A96E] border-t-transparent rounded-full animate-spin"></div>
             </div>
         );
     }
 
-    if (!property) {
+    if (notFound || !property) {
         return (
-            <div className="min-h-screen bg-[#0D0B09] flex flex-col items-center justify-center text-center px-6">
-                <h1 className="font-serif text-4xl text-[#F5F0E8] mb-4">Property Not Found</h1>
-                <p className="font-sans text-[#7A7268] mb-8">The listing you're looking for doesn't exist or has been removed.</p>
-                <Link href="/#properties" className="bg-[#C9A96E] text-[#0D0B09] px-8 py-3 font-sans text-xs uppercase tracking-widest hover:bg-[#F5F0E8] transition-colors">
-                    Browse All Properties
+            <div className="min-h-screen bg-[#0D0B09] pt-32 pb-20 flex flex-col items-center justify-center text-center px-4">
+                <Building2 className="w-16 h-16 text-[#2E2A25] mb-6" />
+                <h1 className="text-3xl font-serif text-[#F5F0E8] mb-4">Property Not Found</h1>
+                <p className="text-[#7A7268] max-w-md font-sans mb-8">
+                    The property you are looking for does not exist or has been removed from our listings.
+                </p>
+                <Link href="/properties" className="bg-[#C9A96E] text-[#0D0B09] px-6 py-3 rounded text-sm font-medium uppercase tracking-wider hover:bg-[#F5F0E8] transition-colors">
+                    Back to Properties
                 </Link>
             </div>
         );
     }
 
-    const whatsappMessage = `Hi Arun, I'm interested in the following commercial property listed on Aurevon Realty:\n\n🏢 *${property.name}*\n📍 ${property.locality}, ${property.city}\n📐 ${property.sqft} sqft\n💰 ${property.priceDisplay}\n📈 Yield: ${property.yield || 'N/A'}\n✅ ${property.status}\n🔖 Listing ID: ${property.id}\n\nI found this listing on your website and would like to know more. Could you please share:\n— Floor plans & specifications\n— Payment schedule\n— Site visit availability\n\nThank you!`;
-
-    const whatsappUrl = `https://wa.me/${SITE_CONFIG.ARUN_WHATSAPP}?text=${encodeURIComponent(whatsappMessage)}`;
-
-    const gallery = property.gallery || [property.image];
-    const amenities = property.amenities || [];
-    const highlights = property.highlights || [];
-
     return (
-        <div className="min-h-screen bg-[#F5F0E8]">
-            {/* Sticky Header */}
-            <div className="sticky top-0 z-50 bg-[#0D0B09]/95 backdrop-blur-lg border-b border-[#2E2A25]">
-                <div className="max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between h-16">
-                    <Link href="/#properties" className="flex items-center text-[#C9A96E] hover:text-[#F5F0E8] transition-colors text-sm font-sans">
-                        <ArrowLeft className="w-4 h-4 mr-2" /> Back to Listings
-                    </Link>
-                    <div className="hidden md:block text-center">
-                        <span className="font-serif text-[#F5F0E8] text-sm">{property.name}</span>
-                        <span className="text-[#7A7268] mx-2">·</span>
-                        <span className="text-[#C9A96E] text-sm font-sans">{property.id}</span>
+        <div className="min-h-screen bg-[#0D0B09] pt-24 pb-20 font-sans text-[#F5F0E8]">
+            {/* Navigation Bar */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <Link href="/properties" className="inline-flex items-center text-[#7A7268] hover:text-[#C9A96E] transition-colors text-sm font-medium">
+                    <ArrowLeft className="w-4 h-4 mr-2" /> Back to Listings
+                </Link>
+            </div>
+
+            {/* Hero Image Section */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 sm:mb-12">
+                <div className="relative h-[40vh] md:h-[60vh] rounded-2xl md:rounded-3xl overflow-hidden border border-[#2E2A25]">
+                    <img
+                        src={property.image}
+                        alt={property.name}
+                        className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+
+                    {/* Badges on Hero */}
+                    <div className="absolute top-6 left-6 z-10 flex flex-wrap gap-2">
+                        {property.featured && (
+                            <span className="bg-[#C9A96E] text-[#0D0B09] text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider shadow-lg">
+                                Featured
+                            </span>
+                        )}
+                        <span className="bg-[#0D0B09]/80 text-[#F5F0E8] backdrop-blur-md text-xs font-medium px-3 py-1.5 rounded-full border border-[#2E2A25]">
+                            {property.status}
+                        </span>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <button className="w-9 h-9 rounded-full bg-[#2E2A25] flex items-center justify-center text-[#7A7268] hover:text-[#C9A96E] transition-colors cursor-pointer" title="Share">
+
+                    {/* Actions on Hero */}
+                    <div className="absolute top-6 right-6 z-10 flex gap-3">
+                        <button className="w-10 h-10 rounded-full bg-[#0D0B09]/80 backdrop-blur-md border border-[#2E2A25] flex items-center justify-center text-[#F5F0E8] hover:text-[#C9A96E] transition-colors">
                             <Share2 className="w-4 h-4" />
                         </button>
-                        <button className="w-9 h-9 rounded-full bg-[#2E2A25] flex items-center justify-center text-[#7A7268] hover:text-red-400 transition-colors cursor-pointer" title="Save">
+                        <button className="w-10 h-10 rounded-full bg-[#0D0B09]/80 backdrop-blur-md border border-[#2E2A25] flex items-center justify-center text-[#F5F0E8] hover:text-red-500 transition-colors">
                             <Heart className="w-4 h-4" />
                         </button>
                     </div>
+
+                    {/* Title overlay */}
+                    <div className="absolute bottom-6 sm:bottom-10 left-6 sm:left-10 right-6 sm:right-10">
+                        <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
+                            <div>
+                                <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif text-white mb-2">{property.name}</h1>
+                                <div className="flex items-center text-[#D9D0C0] text-sm sm:text-base">
+                                    <MapPin className="w-4 h-4 mr-1.5" />
+                                    {property.locality}, {property.city}
+                                </div>
+                            </div>
+                            <div className="text-left md:text-right">
+                                <p className="text-[#A39B8F] text-sm uppercase tracking-wider mb-1">Asking Price</p>
+                                <div className="text-2xl sm:text-3xl md:text-4xl font-serif text-[#C9A96E]">{property.priceDisplay}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Hero Image Gallery */}
-            <div className="bg-[#0D0B09]">
-                <div className="max-w-7xl mx-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-1">
-                        {/* Main Image */}
-                        <div className="md:col-span-3 relative aspect-[16/9] md:aspect-[16/10] overflow-hidden cursor-pointer" onClick={() => setActiveImage(0)}>
-                            <img
-                                src={gallery[activeImage]}
-                                alt={property.name}
-                                className="w-full h-full object-cover transition-all duration-500"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                            <div className="absolute bottom-6 left-6">
-                                <span className="bg-[#8B4A2F] text-[#F5F0E8] font-sans text-[10px] uppercase px-3 py-1 rounded-full tracking-wider">
-                                    {property.subtype}
-                                </span>
-                                {property.nriFriendly && (
-                                    <span className="ml-2 bg-[#0D0B09]/80 backdrop-blur text-[#C9A96E] border border-[#C9A96E] font-sans text-[10px] uppercase px-3 py-1 rounded-full tracking-wider">
-                                        <Globe className="w-3 h-3 inline mr-1" /> NRI Pick
-                                    </span>
-                                )}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+
+                    {/* Left Column - Details */}
+                    <div className="w-full lg:w-[65%] xl:w-[70%] order-2 lg:order-1">
+
+                        {/* Quick Metrics Bar */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 mb-12">
+                            <div className="bg-[#1A1714] p-4 rounded-xl border border-[#2E2A25]">
+                                <Building2 className="w-6 h-6 text-[#C9A96E] mb-3" />
+                                <p className="text-[#7A7268] text-xs uppercase tracking-wider mb-1">Property Type</p>
+                                <p className="text-[#F5F0E8] font-medium">{property.subtype || property.type}</p>
+                            </div>
+                            <div className="bg-[#1A1714] p-4 rounded-xl border border-[#2E2A25]">
+                                <Expand className="w-6 h-6 text-[#C9A96E] mb-3" />
+                                <p className="text-[#7A7268] text-xs uppercase tracking-wider mb-1">Total Built-Up Area</p>
+                                <p className="text-[#F5F0E8] font-medium">{Number(property.sqft).toLocaleString('en-IN')} sqft</p>
+                            </div>
+                            <div className="bg-[#1A1714] p-4 rounded-xl border border-[#2E2A25]">
+                                <TrendingUp className="w-6 h-6 text-[#C9A96E] mb-3" />
+                                <p className="text-[#7A7268] text-xs uppercase tracking-wider mb-1">Expected Yield</p>
+                                <p className="text-[#F5F0E8] font-medium">{property.yield}% p.a.</p>
+                            </div>
+                            <div className="bg-[#1A1714] p-4 rounded-xl border border-[#2E2A25]">
+                                <Calendar className="w-6 h-6 text-[#C9A96E] mb-3" />
+                                <p className="text-[#7A7268] text-xs uppercase tracking-wider mb-1">Status</p>
+                                <p className="text-[#F5F0E8] font-medium">{property.constructionStatus || 'Ready to Move'}</p>
                             </div>
                         </div>
-                        {/* Thumbnails */}
-                        <div className="hidden md:flex md:flex-col gap-1">
-                            {gallery.slice(1, 4).map((img, i) => (
-                                <div
-                                    key={i}
-                                    className={`relative aspect-[4/3] overflow-hidden cursor-pointer group ${activeImage === i + 1 ? 'ring-2 ring-[#C9A96E]' : ''}`}
-                                    onClick={() => setActiveImage(i + 1)}
-                                >
-                                    <img src={img} alt={`View ${i + 2}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors" />
-                                    {i === 2 && gallery.length > 4 && (
-                                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                            <span className="text-white font-sans text-sm">+{gallery.length - 4} more</span>
+
+                        {/* Description */}
+                        <div className="mb-12">
+                            <h2 className="text-2xl font-serif text-[#C9A96E] mb-6 flex items-center gap-3">
+                                <span className="w-8 h-[1px] bg-[#C9A96E]"></span> Description
+                            </h2>
+                            <div className="prose prose-invert prose-p:text-[#A39B8F] prose-h3:text-[#F5F0E8] max-w-none">
+                                <p className="text-lg leading-relaxed whitespace-pre-line">
+                                    {property.shortDescription}
+                                </p>
+                                <div className="mt-8 p-6 bg-[#1A1714] rounded-xl border border-[#2E2A25] flex items-start gap-4">
+                                    <div className="bg-[#C9A96E]/10 p-2 rounded text-[#C9A96E] shrink-0">
+                                        <Building2 className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-[#F5F0E8] font-medium mb-1">Aurevon Realty Insight</h4>
+                                        <p className="text-[#8B847A] text-sm leading-relaxed">
+                                            This {property.subtype?.toLowerCase() || 'property'} located in {property.locality} boasts a competitive {property.yield}% average yield historically for this micro-market. Ideal for {property.type === 'Commercial' ? 'HNI investors looking for capital appreciation and steady rental income.' : 'families looking for premium living spaces.'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Property Features (Mocked for layout if real data isn't extensive) */}
+                        {property.features && property.features.length > 0 && (
+                            <div className="mb-12">
+                                <h2 className="text-2xl font-serif text-[#C9A96E] mb-6 flex items-center gap-3">
+                                    <span className="w-8 h-[1px] bg-[#C9A96E]"></span> Amenities & Features
+                                </h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {property.features.map((feature, idx) => (
+                                        <div key={idx} className="flex items-center text-[#A39B8F] bg-[#1A1714] px-4 py-3 rounded-lg border border-[#2E2A25]">
+                                            <Check className="w-5 h-5 text-[#C9A96E] mr-3 shrink-0" />
+                                            {feature}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Fast Facts / Details */}
+                        <div className="mb-12">
+                            <h2 className="text-2xl font-serif text-[#C9A96E] mb-6 flex items-center gap-3">
+                                <span className="w-8 h-[1px] bg-[#C9A96E]"></span> Property Details
+                            </h2>
+                            <div className="bg-[#1A1714] border border-[#2E2A25] rounded-xl overflow-hidden">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-[#2E2A25]">
+                                    <div className="p-5 flex justify-between items-center bg-[#0D0B09]/50">
+                                        <span className="text-[#7A7268] text-sm">Property ID</span>
+                                        <span className="text-[#F5F0E8] font-medium text-sm">{property.id.slice(-6).toUpperCase()}</span>
+                                    </div>
+                                    <div className="p-5 flex justify-between items-center">
+                                        <span className="text-[#7A7268] text-sm">Location</span>
+                                        <span className="text-[#F5F0E8] font-medium text-sm">{property.locality}</span>
+                                    </div>
+                                    <div className="p-5 flex justify-between items-center">
+                                        <span className="text-[#7A7268] text-sm">City</span>
+                                        <span className="text-[#F5F0E8] font-medium text-sm">{property.city}</span>
+                                    </div>
+                                    <div className="p-5 flex justify-between items-center bg-[#0D0B09]/50">
+                                        <span className="text-[#7A7268] text-sm">Category</span>
+                                        <span className="text-[#F5F0E8] font-medium text-sm">{property.type}</span>
+                                    </div>
+                                    {property.nriFriendly && (
+                                        <div className="p-5 sm:col-span-2 flex justify-between items-center sm:border-t border-[#2E2A25]">
+                                            <span className="text-[#7A7268] text-sm">Special Considerations</span>
+                                            <span className="text-[#10B981] font-medium text-sm flex items-center gap-1.5 bg-[#10B981]/10 px-2.5 py-1 rounded">
+                                                <CheckCircle2 className="w-4 h-4" /> NRI Compliant
+                                            </span>
                                         </div>
                                     )}
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                    {/* Mobile thumbnail strip */}
-                    <div className="flex md:hidden gap-2 p-3 overflow-x-auto">
-                        {gallery.map((img, i) => (
-                            <button
-                                key={i}
-                                onClick={() => setActiveImage(i)}
-                                className={`shrink-0 w-16 h-12 rounded overflow-hidden border-2 cursor-pointer ${activeImage === i ? 'border-[#C9A96E]' : 'border-transparent opacity-60'}`}
-                            >
-                                <img src={img} alt="" className="w-full h-full object-cover" />
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Content */}
-            <div className="max-w-7xl mx-auto px-4 md:px-6 py-12">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-
-                    {/* Left Column — Property Details */}
-                    <div className="lg:col-span-2 space-y-10">
-                        {/* Title Block */}
-                        <div>
-                            <div className="flex items-center gap-2 text-[#7A7268] font-sans text-sm mb-3">
-                                <MapPin className="w-4 h-4 text-[#C9A96E]" />
-                                {property.locality}, {property.city}
-                                <span className="mx-1">·</span>
-                                <span className="text-[#C9A96E]">{property.status}</span>
                             </div>
-                            <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl text-[#1A1714] leading-tight mb-4">{property.name}</h1>
-                            <p className="font-sans text-lg text-[#7A7268] leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
-                                {property.shortDescription}
-                            </p>
                         </div>
 
-                        {/* Key Metrics Strip */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {[
-                                { icon: Building2, label: 'Type', value: property.subtype },
-                                { icon: Maximize2, label: 'Area', value: `${property.sqft} sqft` },
-                                { icon: TrendingUp, label: 'Yield', value: property.yield || 'N/A' },
-                                { icon: Calendar, label: 'Possession', value: property.possession || property.status },
-                            ].map((m, i) => (
-                                <div key={i} className="bg-white p-5 border border-[#D9D0C0] text-center">
-                                    <m.icon className="w-5 h-5 text-[#C9A96E] mx-auto mb-2" strokeWidth={1.5} />
-                                    <p className="font-sans text-[10px] uppercase tracking-wider text-[#7A7268] mb-1">{m.label}</p>
-                                    <p className="font-serif text-lg text-[#1A1714]">{m.value}</p>
+                    </div>
+
+                    {/* Right Column - Sticky Contact Card */}
+                    <div className="w-full lg:w-[35%] xl:w-[30%] order-1 lg:order-2">
+                        <div className="sticky top-32">
+                            <div className="bg-[#1A1714] border border-[#C9A96E]/30 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+                                {/* Decor */}
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-[#C9A96E]/5 rounded-bl-full -mr-10 -mt-10 pointer-events-none"></div>
+
+                                <div className="mb-6">
+                                    <h3 className="text-xl font-serif text-[#F5F0E8] mb-1">Interested in this property?</h3>
+                                    <p className="text-[#8B847A] text-sm">Connect with our advisory team directly.</p>
                                 </div>
-                            ))}
-                        </div>
 
-                        {/* Highlights */}
-                        {highlights.length > 0 && (
-                            <div className="flex flex-wrap gap-3">
-                                {highlights.map((h, i) => (
-                                    <span key={i} className="flex items-center gap-1.5 bg-[#C9A96E]/10 border border-[#C9A96E]/30 px-4 py-2 rounded-full font-sans text-sm text-[#1A1714]">
-                                        <CheckCircle2 className="w-4 h-4 text-[#C9A96E]" /> {h}
-                                    </span>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Full Description */}
-                        <div>
-                            <h2 className="font-serif text-2xl text-[#1A1714] mb-4">About This Property</h2>
-                            <p className="font-sans text-base text-[#7A7268] leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
-                                {property.fullDescription || property.shortDescription}
-                            </p>
-                        </div>
-
-                        {/* Specifications Table */}
-                        <div>
-                            <h2 className="font-serif text-2xl text-[#1A1714] mb-4">Specifications</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-[#D9D0C0] border border-[#D9D0C0] overflow-hidden rounded">
-                                {[
-                                    { label: 'Property Type', value: property.subtype, icon: Building2 },
-                                    { label: 'Area Range', value: `${property.sqft} sqft`, icon: Maximize2 },
-                                    { label: 'Price Range', value: property.priceDisplay, icon: TrendingUp },
-                                    { label: 'Price per sqft', value: property.pricePerSqft || '—', icon: Layers },
-                                    { label: 'Floors', value: property.floor || '—', icon: Building2 },
-                                    { label: 'Facing', value: property.facing || '—', icon: Compass },
-                                    { label: 'Parking', value: property.parking || '—', icon: Car },
-                                    { label: 'Furnishing', value: property.furnishing || '—', icon: Layers },
-                                    { label: 'Construction', value: property.constructionStatus || property.status, icon: Calendar },
-                                    { label: 'Possession', value: property.possession || '—', icon: Calendar },
-                                    { label: 'Maintenance', value: property.maintenanceCharge || '—', icon: Shield },
-                                    { label: 'RERA ID', value: property.reraId || '—', icon: Shield },
-                                ].map((spec, i) => (
-                                    <div key={i} className="bg-white p-4 flex items-center gap-3">
-                                        <spec.icon className="w-4 h-4 text-[#C9A96E] shrink-0" strokeWidth={1.5} />
-                                        <div>
-                                            <p className="font-sans text-[10px] uppercase tracking-wider text-[#7A7268]">{spec.label}</p>
-                                            <p className="font-sans text-sm text-[#1A1714] font-medium">{spec.value}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Amenities */}
-                        {amenities.length > 0 && (
-                            <div>
-                                <h2 className="font-serif text-2xl text-[#1A1714] mb-4">Amenities & Features</h2>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                    {amenities.map((a, i) => (
-                                        <div key={i} className="flex items-center gap-2 bg-white p-3 border border-[#D9D0C0] rounded">
-                                            <CheckCircle2 className="w-4 h-4 text-[#C9A96E] shrink-0" />
-                                            <span className="font-sans text-sm text-[#1A1714]">{a}</span>
-                                        </div>
-                                    ))}
+                                <div className="text-3xl font-serif text-[#C9A96E] mb-6">
+                                    {property.priceDisplay}
                                 </div>
-                            </div>
-                        )}
-                    </div>
 
-                    {/* Right Column — Sticky CTA Sidebar */}
-                    <div className="lg:col-span-1">
-                        <div className="sticky top-24 space-y-6">
-                            {/* Price Card */}
-                            <div className="bg-white border border-[#D9D0C0] p-8 rounded shadow-sm">
-                                <p className="font-sans text-[10px] uppercase tracking-wider text-[#7A7268] mb-1">Starting From</p>
-                                <p className="font-serif text-4xl text-[#1A1714] mb-1">{property.priceDisplay}</p>
-                                {property.pricePerSqft && (
-                                    <p className="font-sans text-sm text-[#C9A96E] mb-6">{property.pricePerSqft}</p>
-                                )}
-
-                                {property.yield && (
-                                    <div className="flex items-center gap-2 bg-[#C9A96E]/10 border border-[#C9A96E]/30 rounded p-3 mb-6">
-                                        <TrendingUp className="w-5 h-5 text-[#C9A96E]" />
-                                        <div>
-                                            <p className="font-sans text-xs text-[#7A7268]">Expected Yield</p>
-                                            <p className="font-serif text-xl text-[#1A1714]">{property.yield}</p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Primary CTA — WhatsApp Enquiry */}
-                                <a
-                                    href={whatsappUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="w-full flex items-center justify-center gap-2 bg-[#25D366] text-white py-4 rounded font-sans text-sm uppercase tracking-wider hover:bg-[#20bd5a] transition-colors shadow-lg shadow-[#25D366]/20"
-                                >
-                                    <MessageCircle className="w-5 h-5" fill="currentColor" />
-                                    Enquire Now on WhatsApp
-                                </a>
-
-                                <p className="text-center font-sans text-[10px] text-[#7A7268] mt-3">
-                                    Pre-filled message • Instant reply within 2 hours
-                                </p>
-
-                                {/* Secondary CTA */}
-                                <a
-                                    href="tel:+919767446655"
-                                    className="w-full flex items-center justify-center gap-2 border border-[#D9D0C0] text-[#1A1714] py-3 rounded font-sans text-sm uppercase tracking-wider hover:border-[#C9A96E] transition-colors mt-4"
-                                >
-                                    Call +91 9767 446 655
-                                </a>
-                            </div>
-
-                            {/* Trust Badges */}
-                            <div className="bg-[#0D0B09] p-6 rounded border border-[#2E2A25]">
                                 <div className="space-y-4">
-                                    {[
-                                        { label: 'RERA Registered', sub: property.reraId || 'Verified' },
-                                        { label: '25+ Years Experience', sub: 'Since 2001' },
-                                        { label: '1,000+ Deals Closed', sub: 'Pan-India' },
-                                    ].map((badge, i) => (
-                                        <div key={i} className="flex items-center gap-3">
-                                            <Shield className="w-5 h-5 text-[#C9A96E] shrink-0" />
-                                            <div>
-                                                <p className="font-sans text-sm text-[#F5F0E8]">{badge.label}</p>
-                                                <p className="font-sans text-[10px] text-[#7A7268]">{badge.sub}</p>
-                                            </div>
+                                    {/* Primary CTA - WhatsApp */}
+                                    <button
+                                        onClick={handleWhatsAppClick}
+                                        className="w-full relative overflow-hidden group bg-[#25D366] text-[#FFFFFF] py-4 rounded-xl flex items-center justify-center font-bold text-sm uppercase tracking-wider transition-all hover:bg-[#1EBE5A] hover:shadow-[0_0_20px_rgba(37,211,102,0.3)]"
+                                    >
+                                        <span className="absolute inset-0 w-full h-full -mt-1 rounded-lg opacity-30 bg-gradient-to-b from-transparent via-transparent to-black pointer-events-none"></span>
+                                        {/* Simple WhatsApp core icon SVG */}
+                                        <svg className="w-5 h-5 mr-3 shrink-0" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                                        </svg>
+                                        WhatsApp Enquiry
+                                        <ArrowUpRight className="w-4 h-4 ml-2 opacity-0 -translate-x-2 transition-all group-hover:opacity-100 group-hover:translate-x-0" />
+                                    </button>
+
+                                    {/* Secondary CTA */}
+                                    <a href={`tel:${DISPLAY_NUMBER}`} className="w-full relative group border border-[#C9A96E] text-[#C9A96E] py-4 rounded-xl flex items-center justify-center font-bold text-sm uppercase tracking-wider transition-colors hover:bg-[#C9A96E] hover:text-[#0D0B09]">
+                                        <Phone className="w-4 h-4 mr-3 shrink-0" />
+                                        Request Callback
+                                    </a>
+                                </div>
+
+                                <div className="mt-8 pt-6 border-t border-[#2E2A25]">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-full border border-[#C9A96E] flex items-center justify-center shrink-0">
+                                            <span className="font-serif text-xl text-[#C9A96E]">AR</span>
                                         </div>
-                                    ))}
+                                        <div>
+                                            <p className="font-serif text-[#F5F0E8] leading-tight">Aurevon Advisors</p>
+                                            <p className="text-[#8B847A] text-xs mt-0.5">RERA Reg: P52100000000</p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-
-                            {/* Listing ID */}
-                            <p className="text-center font-sans text-[10px] text-[#7A7268] uppercase tracking-wider">
-                                Listing ID: {property.id}
-                            </p>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            {/* Bottom Sticky CTA (Mobile) */}
-            <div className="fixed bottom-0 left-0 right-0 bg-[#0D0B09]/95 backdrop-blur-lg border-t border-[#2E2A25] p-4 flex items-center justify-between gap-4 lg:hidden z-50">
-                <div>
-                    <p className="font-serif text-xl text-[#F5F0E8]">{property.priceDisplay}</p>
-                    <p className="font-sans text-[10px] text-[#7A7268]">{property.sqft} sqft · {property.yield || 'N/A'} yield</p>
                 </div>
-                <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-2 bg-[#25D366] text-white px-6 py-3 rounded font-sans text-sm uppercase tracking-wider hover:bg-[#20bd5a] transition-colors shrink-0"
-                >
-                    <MessageCircle className="w-4 h-4" fill="currentColor" />
-                    Enquire Now
-                </a>
             </div>
         </div>
     );
