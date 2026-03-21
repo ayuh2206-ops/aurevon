@@ -14,6 +14,7 @@ import Testimonials from '@/components/sections/Testimonials';
 import NRIDesk from '@/components/sections/NRIDesk';
 import Blog from '@/components/sections/Blog';
 import Contact from '@/components/sections/Contact';
+import YieldCalculator from '@/components/sections/YieldCalculator';
 import { getProperties } from '@/lib/firebaseUtils';
 
 export default function HomePage() {
@@ -64,6 +65,7 @@ export default function HomePage() {
         <Locations />
         <Testimonials />
         <NRIDesk />
+        <YieldCalculator />
         <Blog />
         <Contact />
       </main>

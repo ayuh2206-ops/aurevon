@@ -137,7 +137,24 @@ export default function SearchOptionsPage() {
                     {/* Items List */}
                     <div className="space-y-3">
                         {options[activeTab]?.map((item, index) => (
-                            <div key={index} className="flex items-center gap-3 bg-[#F5F0E8]/30 p-2 rounded border border-[#D9D0C0]/50 group transition-colors hover:border-[#D9D0C0]">
+                            <div 
+                                key={index} 
+                                draggable={true}
+                                onDragStart={(e) => e.dataTransfer.setData('text/plain', index.toString())}
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                                    if (draggedIndex === index) return;
+                                    setOptions(prev => {
+                                        const newArray = [...prev[activeTab]];
+                                        const [movedItem] = newArray.splice(draggedIndex, 1);
+                                        newArray.splice(index, 0, movedItem);
+                                        return { ...prev, [activeTab]: newArray };
+                                    });
+                                }}
+                                className="flex items-center gap-3 bg-[#F5F0E8]/30 p-2 rounded border border-[#D9D0C0]/50 group transition-colors hover:border-[#D9D0C0]"
+                            >
                                 <GripVertical className="w-5 h-5 text-[#AAAAAA] cursor-grab active:cursor-grabbing" />
                                 <input
                                     className="flex-1 bg-transparent outline-none font-sans text-sm text-[#1A1714]"

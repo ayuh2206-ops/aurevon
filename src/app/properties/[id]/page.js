@@ -1,9 +1,9 @@
 'use client';
 import { useState, useEffect, use } from 'react';
-import { getProperty } from '@/lib/firebaseUtils';
+import { getProperty, addEnquiry } from '@/lib/firebaseUtils';
 import {
     MapPin, Expand, Building2, TrendingUp, CheckCircle2,
-    ArrowLeft, Calendar, Share2, Heart, Check, Phone, ArrowUpRight
+    ArrowLeft, Calendar, Share2, Heart, Check, Phone, ArrowUpRight, Send
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -19,6 +19,9 @@ export default function PropertyDetailsPage({ params }) {
     const [property, setProperty] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
+    const [enquiry, setEnquiry] = useState({ name: '', phone: '', message: '' });
+    const [enquirySent, setEnquirySent] = useState(false);
+    const [enquirySending, setEnquirySending] = useState(false);
 
     useEffect(() => {
         const fetchPropertyDetails = async () => {
@@ -105,7 +108,14 @@ export default function PropertyDetailsPage({ params }) {
 
                     {/* Actions on Hero */}
                     <div className="absolute top-6 right-6 z-10 flex gap-3">
-                        <button className="w-10 h-10 rounded-full bg-[#0D0B09]/80 backdrop-blur-md border border-[#2E2A25] flex items-center justify-center text-[#F5F0E8] hover:text-[#C9A96E] transition-colors">
+                        <button 
+                            onClick={() => {
+                                if (typeof navigator !== 'undefined' && navigator.share) {
+                                    navigator.share({ title: property.name, url: window.location.href }).catch(console.error);
+                                }
+                            }}
+                            className="w-10 h-10 rounded-full bg-[#0D0B09]/80 backdrop-blur-md border border-[#2E2A25] flex items-center justify-center text-[#F5F0E8] hover:text-[#C9A96E] transition-colors"
+                        >
                             <Share2 className="w-4 h-4" />
                         </button>
                         <button className="w-10 h-10 rounded-full bg-[#0D0B09]/80 backdrop-blur-md border border-[#2E2A25] flex items-center justify-center text-[#F5F0E8] hover:text-red-500 transition-colors">
@@ -185,19 +195,35 @@ export default function PropertyDetailsPage({ params }) {
                             </div>
                         </div>
 
-                        {/* Property Features (Mocked for layout if real data isn't extensive) */}
-                        {property.features && property.features.length > 0 && (
+                        {/* Property Features & Amenities */}
+                        {property.amenities && property.amenities.length > 0 && (
                             <div className="mb-12">
                                 <h2 className="text-2xl font-serif text-[#C9A96E] mb-6 flex items-center gap-3">
                                     <span className="w-8 h-[1px] bg-[#C9A96E]"></span> Amenities & Features
                                 </h2>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {property.features.map((feature, idx) => (
+                                    {property.amenities.map((amenity, idx) => (
                                         <div key={idx} className="flex items-center text-[#A39B8F] bg-[#1A1714] px-4 py-3 rounded-lg border border-[#2E2A25]">
                                             <Check className="w-5 h-5 text-[#C9A96E] mr-3 shrink-0" />
-                                            {feature}
+                                            {amenity}
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Location / Google Maps */}
+                        {property.mapsUrl && (
+                            <div className="mb-12">
+                                <h2 className="text-2xl font-serif text-[#C9A96E] mb-6 flex items-center gap-3">
+                                    <span className="w-8 h-[1px] bg-[#C9A96E]"></span> Location
+                                </h2>
+                                <div className="w-full h-80 bg-[#1A1714] rounded-xl overflow-hidden border border-[#2E2A25]">
+                                    <iframe 
+                                        src={property.mapsUrl.replace('/place/', '/search/')} 
+                                        width="100%" height="100%" style={{ border: 0 }} 
+                                        allowFullScreen="" loading="lazy" referrerPolicy="no-referrer-when-downgrade"
+                                    />
                                 </div>
                             </div>
                         )}
@@ -277,6 +303,62 @@ export default function PropertyDetailsPage({ params }) {
                                     </a>
                                 </div>
 
+                                {/* Inline Enquiry Form */}
+                                <div className="mt-6 pt-6 border-t border-[#2E2A25]">
+                                    {enquirySent ? (
+                                        <div className="text-center py-4">
+                                            <CheckCircle2 className="w-8 h-8 text-[#C9A96E] mx-auto mb-2" />
+                                            <p className="text-[#F5F0E8] text-sm font-serif">Enquiry Received!</p>
+                                            <p className="text-[#8B847A] text-xs mt-1">We'll call you back shortly.</p>
+                                        </div>
+                                    ) : (
+                                        <form onSubmit={async (e) => {
+                                            e.preventDefault();
+                                            setEnquirySending(true);
+                                            try {
+                                                await addEnquiry({
+                                                    ...enquiry,
+                                                    propertyId: id,
+                                                    propertyName: property?.name,
+                                                    enquiryType: 'property_detail',
+                                                    source: 'property_page',
+                                                    status: 'New',
+                                                });
+                                                setEnquirySent(true);
+                                            } catch (err) {
+                                                console.error(err);
+                                            } finally {
+                                                setEnquirySending(false);
+                                            }
+                                        }} className="space-y-3">
+                                            <p className="text-xs text-[#8B847A] uppercase tracking-wider font-sans mb-3">Quick Enquiry</p>
+                                            <input
+                                                required type="text" placeholder="Your Name"
+                                                value={enquiry.name}
+                                                onChange={e => setEnquiry(p => ({ ...p, name: e.target.value }))}
+                                                className="w-full bg-[#0D0B09] border border-[#2E2A25] rounded-lg px-3 py-2.5 text-[#F5F0E8] text-sm font-sans focus:outline-none focus:border-[#C9A96E] placeholder:text-[#7A7268]"
+                                            />
+                                            <input
+                                                required type="tel" placeholder="Phone / WhatsApp"
+                                                value={enquiry.phone}
+                                                onChange={e => setEnquiry(p => ({ ...p, phone: e.target.value }))}
+                                                className="w-full bg-[#0D0B09] border border-[#2E2A25] rounded-lg px-3 py-2.5 text-[#F5F0E8] text-sm font-sans focus:outline-none focus:border-[#C9A96E] placeholder:text-[#7A7268]"
+                                            />
+                                            <textarea
+                                                rows={2} placeholder="Message (optional)"
+                                                value={enquiry.message}
+                                                onChange={e => setEnquiry(p => ({ ...p, message: e.target.value }))}
+                                                className="w-full bg-[#0D0B09] border border-[#2E2A25] rounded-lg px-3 py-2.5 text-[#F5F0E8] text-sm font-sans focus:outline-none focus:border-[#C9A96E] placeholder:text-[#7A7268] resize-none"
+                                            />
+                                            <button type="submit" disabled={enquirySending}
+                                                className="w-full flex items-center justify-center gap-2 bg-[#C9A96E]/10 border border-[#C9A96E]/40 text-[#C9A96E] py-2.5 rounded-lg text-sm font-sans uppercase tracking-wider hover:bg-[#C9A96E] hover:text-[#0D0B09] transition-colors disabled:opacity-50">
+                                                <Send className="w-4 h-4" />
+                                                {enquirySending ? 'Sending...' : 'Send Enquiry'}
+                                            </button>
+                                        </form>
+                                    )}
+                                </div>
+
                                 <div className="mt-8 pt-6 border-t border-[#2E2A25]">
                                     <div className="flex items-center gap-4">
                                         <div className="w-12 h-12 rounded-full border border-[#C9A96E] flex items-center justify-center shrink-0">
@@ -284,7 +366,11 @@ export default function PropertyDetailsPage({ params }) {
                                         </div>
                                         <div>
                                             <p className="font-serif text-[#F5F0E8] leading-tight">Aurevon Advisors</p>
-                                            <p className="text-[#8B847A] text-xs mt-0.5">RERA Reg: P52100000000</p>
+                                            <p className="text-[#8B847A] text-xs mt-0.5">
+                                                {property.reraId ? (
+                                                    <>RERA Reg: <a href={`https://maharera.mahaonline.gov.in`} target="_blank" rel="noreferrer" className="text-[#C9A96E] hover:underline">{property.reraId}</a></>
+                                                ) : 'RERA Registered'}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -294,6 +380,32 @@ export default function PropertyDetailsPage({ params }) {
 
                 </div>
             </div>
+
+            {/* JSON-LD Schema */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "RealEstateListing",
+                        "name": property.name,
+                        "description": property.shortDescription,
+                        "image": property.image,
+                        "url": `https://aurevon.com/properties/${property.id}`,
+                        "offers": {
+                            "@type": "Offer",
+                            "priceCurrency": "INR",
+                            "price": property.priceMin || property.priceDisplay,
+                        },
+                        "address": {
+                            "@type": "PostalAddress",
+                            "addressLocality": property.locality,
+                            "addressRegion": "Maharashtra",
+                            "addressCountry": "IN"
+                        }
+                    })
+                }}
+            />
         </div>
     );
 }

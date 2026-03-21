@@ -197,3 +197,124 @@ export async function updateSearchOptions(optionsData) {
         throw error;
     }
 }
+
+// ==========================================
+// ENQUIRIES CRUD
+// ==========================================
+
+const ENQUIRIES_COLLECTION = 'enquiries';
+
+export async function addEnquiry(enquiryData) {
+    try {
+        const enquiriesRef = collection(db, ENQUIRIES_COLLECTION);
+        const newDoc = await addDoc(enquiriesRef, {
+            ...enquiryData,
+            createdAt: new Date().toISOString()
+        });
+        return newDoc.id;
+    } catch (error) {
+        console.error('Error adding enquiry:', error);
+        throw error;
+    }
+}
+
+export async function getEnquiries() {
+    try {
+        const enquiriesRef = collection(db, ENQUIRIES_COLLECTION);
+        const q = query(enquiriesRef, orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+    } catch (error) {
+        console.error('Error fetching enquiries:', error);
+        throw error;
+    }
+}
+
+// ==========================================
+// BLOGS CRUD
+// ==========================================
+
+const BLOGS_COLLECTION = 'blogs';
+
+export async function getBlogs() {
+    try {
+        const ref = collection(db, BLOGS_COLLECTION);
+        const q = query(ref, orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (error) {
+        console.error('Error fetching blogs:', error);
+        throw error;
+    }
+}
+
+export async function addBlog(blogData) {
+    try {
+        const ref = collection(db, BLOGS_COLLECTION);
+        const newDoc = await addDoc(ref, {
+            ...blogData,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        });
+        return newDoc.id;
+    } catch (error) {
+        console.error('Error adding blog:', error);
+        throw error;
+    }
+}
+
+export async function updateBlog(id, blogData) {
+    try {
+        const ref = doc(db, BLOGS_COLLECTION, id);
+        await updateDoc(ref, { ...blogData, updatedAt: new Date().toISOString() });
+        return true;
+    } catch (error) {
+        console.error('Error updating blog:', error);
+        throw error;
+    }
+}
+
+export async function deleteBlog(id) {
+    try {
+        const ref = doc(db, BLOGS_COLLECTION, id);
+        await deleteDoc(ref);
+        return true;
+    } catch (error) {
+        console.error('Error deleting blog:', error);
+        throw error;
+    }
+}
+
+// ==========================================
+// SITE SETTINGS (siteConfig document)
+// ==========================================
+
+const SITE_CONFIG_DOC = 'siteConfig';
+
+export async function getSiteConfig() {
+    try {
+        const ref = doc(db, SETTINGS_COLLECTION, SITE_CONFIG_DOC);
+        const snapshot = await getDoc(ref);
+        if (snapshot.exists()) return snapshot.data();
+        return null;
+    } catch (error) {
+        console.error('Error fetching siteConfig:', error);
+        return null;
+    }
+}
+
+export async function updateSiteConfig(configData) {
+    try {
+        const ref = doc(db, SETTINGS_COLLECTION, SITE_CONFIG_DOC);
+        await setDoc(ref, configData, { merge: true });
+        return true;
+    } catch (error) {
+        console.error('Error updating siteConfig:', error);
+        throw error;
+    }
+}
+

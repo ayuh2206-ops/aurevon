@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, Clock, User } from 'lucide-react';
 import { blogArticles } from '@/lib/data';
+import Navbar from '@/components/Navbar';
 
 export const metadata = {
     title: 'Blog — Commercial Real Estate Insights | Aurevon Realty',
@@ -14,9 +15,7 @@ export const metadata = {
 };
 
 export default function BlogListingPage() {
-    const allBlogs = typeof window !== 'undefined'
-        ? JSON.parse(localStorage.getItem('aurevon_blogs') || 'null') || blogArticles
-        : blogArticles;
+    const allBlogs = blogArticles;
 
     const featured = allBlogs.filter(b => b.featured);
     const rest = allBlogs.filter(b => !b.featured);
@@ -28,6 +27,7 @@ export default function BlogListingPage() {
 
     return (
         <div className="min-h-screen bg-[#F5F0E8]">
+            <Navbar />
             {/* Hero Header */}
             <div className="bg-[#0D0B09] border-b border-[#2E2A25]">
                 <div className="max-w-7xl mx-auto px-6 py-20 md:py-28">

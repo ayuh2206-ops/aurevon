@@ -1,8 +1,11 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Building2, Plus, MessageCircle, Settings, LogOut, LayoutDashboard, FileText, Users, Filter } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+
+const ADMIN_EMAIL = 'arundongare@aurevon.com'; // Change this to the real admin email
 
 const sidebarLinks = [
     { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
@@ -18,27 +21,22 @@ const sidebarLinks = [
 export default function AdminDashboardLayout({ children }) {
     const router = useRouter();
     const pathname = usePathname();
-    const [authed, setAuthed] = useState(false);
+    const { user, logout, loading } = useAuth();
 
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const isAuthed = localStorage.getItem('aurevon_auth') === 'true';
-            if (!isAuthed) {
+        if (!loading) {
+            if (!user || user.email !== ADMIN_EMAIL) {
                 router.push('/admin');
-            } else {
-                setAuthed(true);
             }
         }
-    }, [router]);
+    }, [user, loading, router]);
 
-    const handleLogout = () => {
-        if (typeof window !== 'undefined') {
-            localStorage.removeItem('aurevon_auth');
-        }
+    const handleLogout = async () => {
+        await logout();
         router.push('/admin');
     };
 
-    if (!authed) return null;
+    if (loading || !user || user.email !== ADMIN_EMAIL) return null;
 
     return (
         <div className="min-h-screen bg-[#F5F0E8] flex flex-col md:flex-row font-sans">
@@ -78,7 +76,7 @@ export default function AdminDashboardLayout({ children }) {
             {/* Main Content */}
             <main className="flex-1 p-4 sm:p-8 md:p-12 overflow-y-auto w-full">
                 <div className="mb-6 text-right">
-                    <span className="font-sans text-sm text-[#7A7268]">Welcome, <span className="text-[#1A1714] font-medium">Arun</span></span>
+                    <span className="font-sans text-sm text-[#7A7268]">Welcome, <span className="text-[#1A1714] font-medium">{user.displayName || user.email}</span></span>
                 </div>
                 {children}
             </main>

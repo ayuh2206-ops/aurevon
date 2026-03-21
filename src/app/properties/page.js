@@ -85,8 +85,45 @@ function PropertiesContent() {
             results = results.filter(p => p.status === filterStatus || p.constructionStatus === filterStatus);
         }
 
-        // Note: Budget, Area, Yield logic can be more complex (parsing ranges), 
-        // kept minimal here for UI demonstration based on standard demo data.
+        // Filter by Budget — parse range labels like "₹50 Lacs – ₹1 Cr"
+        if (filterBudget) {
+            const parseCrores = (str) => {
+                if (!str) return 0;
+                const lower = str.toLowerCase();
+                if (lower.includes('lac') || lower.includes('lakh')) return parseFloat(str.replace(/[^\d.]/g, '')) * 0.01;
+                if (lower.includes('cr')) return parseFloat(str.replace(/[^\d.]/g, ''));
+                return 0;
+            };
+            const parts = filterBudget.split(/[-–]/);
+            const minCr = parseCrores(parts[0]);
+            const maxCr = parts[1] ? parseCrores(parts[1]) : Infinity;
+            results = results.filter(p => {
+                const priceVal = parseFloat(String(p.priceMin).replace(/[^\d.]/g, '')) || 0;
+                return priceVal >= minCr && priceVal <= maxCr;
+            });
+        }
+
+        // Filter by Area — parse range labels like "1000 - 5000 sqft"
+        if (filterArea) {
+            const nums = filterArea.replace(/[^\d\s-]/g, '').split(/[-\s]+/).map(Number).filter(Boolean);
+            const minSqft = nums[0] || 0;
+            const maxSqft = nums[1] || Infinity;
+            results = results.filter(p => {
+                const sqft = parseFloat(p.sqft) || parseFloat(p.superBuiltUp) || 0;
+                return sqft >= minSqft && sqft <= maxSqft;
+            });
+        }
+
+        // Filter by Yield — parse range labels like "7% - 9%"
+        if (filterYield) {
+            const nums = filterYield.replace(/[^\d.\s-]/g, '').split(/[-\s]+/).map(Number).filter(n => !isNaN(n));
+            const minY = nums[0] || 0;
+            const maxY = nums[1] || Infinity;
+            results = results.filter(p => {
+                const y = parseFloat(p.yield) || parseFloat(p.yieldPercent) || 0;
+                return y >= minY && y <= maxY;
+            });
+        }
 
         setFilteredProperties(results);
     }, [searchParams, allProperties]);

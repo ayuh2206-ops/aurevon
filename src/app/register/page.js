@@ -16,7 +16,7 @@ export default function RegisterPage() {
 
     useEffect(() => {
         if (user) {
-            router.push('/admin/dashboard'); // Will eventually route to user dashboard
+            router.push('/dashboard'); // Will eventually route to user dashboard
         }
     }, [user, router]);
 

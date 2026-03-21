@@ -1,8 +1,39 @@
 'use client';
-import { ChevronDown, MessageCircle } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronDown, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { SITE_CONFIG } from '@/lib/config';
+import { addEnquiry } from '@/lib/firebaseUtils';
 
 export default function Contact() {
+    const [formData, setFormData] = useState({
+        name: '', email: '', phone: '',
+        enquiryType: '', city: '', budget: '', message: ''
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitted, setSubmitted] = useState(false);
+    const [error, setError] = useState('');
+
+    const update = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setError('');
+        try {
+            await addEnquiry({
+                ...formData,
+                status: 'New',
+                source: 'contact_form',
+            });
+            setSubmitted(true);
+        } catch (err) {
+            console.error('Failed to save enquiry:', err);
+            setError('Failed to send enquiry. Please try WhatsApp or call directly.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
         <section id="contact" className="py-24 bg-[#0D0B09] border-t border-[#2E2A25]">
             <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16">
@@ -36,11 +67,9 @@ export default function Contact() {
                     <div className="w-full h-64 rounded overflow-hidden border border-[#2E2A25]">
                         <iframe
                             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3782.548890837658!2d73.76493!3d18.57244!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc2b900bfcab5e1%3A0xe6a29f92a7ee8e44!2sAurevon%20Realty!5e0!3m2!1sen!2sin!4v1708416000000!5m2!1sen!2sin"
-                            width="100%"
-                            height="100%"
+                            width="100%" height="100%"
                             style={{ border: 0, filter: 'grayscale(80%) invert(92%) contrast(83%)' }}
-                            allowFullScreen=""
-                            loading="lazy"
+                            allowFullScreen="" loading="lazy"
                             referrerPolicy="no-referrer-when-downgrade"
                             title="Aurevon Realty Location"
                         />
@@ -48,76 +77,118 @@ export default function Contact() {
                 </div>
 
                 <div className="bg-[#1A1714] p-8 md:p-12 rounded border border-[#2E2A25]">
-                    <form className="space-y-8" onSubmit={e => e.preventDefault()}>
-                        {/* Full Name */}
-                        <div className="relative group">
-                            <input type="text" id="name" required className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] transition-colors peer placeholder-transparent" placeholder="Full Name" />
-                            <label htmlFor="name" className="absolute left-0 -top-4 text-xs font-sans text-[#7A7268] transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-2 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#C9A96E]">Full Name</label>
+                    {submitted ? (
+                        <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                            <CheckCircle2 className="w-16 h-16 text-[#C9A96E] mb-6" />
+                            <h3 className="font-serif text-3xl text-[#F5F0E8] mb-3">Enquiry Received!</h3>
+                            <p className="text-[#7A7268] font-sans text-sm leading-relaxed max-w-xs">
+                                Thank you for reaching out. Arun will personally get back to you within 24 hours.
+                            </p>
+                            <button
+                                onClick={() => { setSubmitted(false); setFormData({ name: '', email: '', phone: '', enquiryType: '', city: '', budget: '', message: '' }); }}
+                                className="mt-8 text-[#C9A96E] text-sm font-sans uppercase tracking-wider hover:text-[#F5F0E8] transition-colors"
+                            >
+                                Submit Another Enquiry
+                            </button>
                         </div>
+                    ) : (
+                        <form className="space-y-8" onSubmit={handleSubmit}>
+                            {error && (
+                                <div className="bg-red-900/30 border border-red-700 text-red-300 p-3 rounded text-sm font-sans">
+                                    {error}
+                                </div>
+                            )}
 
-                        {/* Email & Phone */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {/* Full Name */}
                             <div className="relative group">
-                                <input type="email" id="email" required className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] transition-colors peer placeholder-transparent" placeholder="Email" />
-                                <label htmlFor="email" className="absolute left-0 -top-4 text-xs font-sans text-[#7A7268] transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-2 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#C9A96E]">Email Address</label>
+                                <input type="text" id="name" required
+                                    className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] transition-colors peer placeholder-transparent"
+                                    placeholder="Full Name"
+                                    value={formData.name} onChange={e => update('name', e.target.value)}
+                                />
+                                <label htmlFor="name" className="absolute left-0 -top-4 text-xs font-sans text-[#7A7268] transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-2 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#C9A96E]">Full Name</label>
                             </div>
+
+                            {/* Email & Phone */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="relative group">
+                                    <input type="email" id="email" required
+                                        className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] transition-colors peer placeholder-transparent"
+                                        placeholder="Email"
+                                        value={formData.email} onChange={e => update('email', e.target.value)}
+                                    />
+                                    <label htmlFor="email" className="absolute left-0 -top-4 text-xs font-sans text-[#7A7268] transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-2 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#C9A96E]">Email Address</label>
+                                </div>
+                                <div className="relative group">
+                                    <input type="tel" id="phone" required
+                                        className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] transition-colors peer placeholder-transparent"
+                                        placeholder="Phone"
+                                        value={formData.phone} onChange={e => update('phone', e.target.value)}
+                                    />
+                                    <label htmlFor="phone" className="absolute left-0 -top-4 text-xs font-sans text-[#7A7268] transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-2 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#C9A96E]">Phone / WhatsApp</label>
+                                </div>
+                            </div>
+
+                            {/* Enquiry Type */}
+                            <div className="relative">
+                                <label htmlFor="enquiry-type" className="sr-only">Enquiry Type</label>
+                                <select id="enquiry-type" value={formData.enquiryType} onChange={e => update('enquiryType', e.target.value)}
+                                    className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] appearance-none">
+                                    <option value="" disabled className="bg-[#1A1714]">Enquiry Type</option>
+                                    <option value="office" className="bg-[#1A1714]">Office Space</option>
+                                    <option value="retail" className="bg-[#1A1714]">Retail / Shop</option>
+                                    <option value="preleased" className="bg-[#1A1714]">Pre-Leased Investment</option>
+                                    <option value="nri" className="bg-[#1A1714]">NRI Commercial Advisory</option>
+                                    <option value="other" className="bg-[#1A1714]">Other</option>
+                                </select>
+                                <ChevronDown className="absolute right-0 top-3 w-4 h-4 text-[#7A7268] pointer-events-none" />
+                            </div>
+
+                            {/* City of Interest */}
+                            <div className="relative">
+                                <label htmlFor="city-interest" className="sr-only">City of Interest</label>
+                                <select id="city-interest" value={formData.city} onChange={e => update('city', e.target.value)}
+                                    className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] appearance-none">
+                                    <option value="" disabled className="bg-[#1A1714]">City of Interest</option>
+                                    <option value="pune" className="bg-[#1A1714]">Pune</option>
+                                    <option value="mumbai" className="bg-[#1A1714]">Mumbai</option>
+                                    <option value="bangalore" className="bg-[#1A1714]">Bangalore</option>
+                                    <option value="other" className="bg-[#1A1714]">Other</option>
+                                </select>
+                                <ChevronDown className="absolute right-0 top-3 w-4 h-4 text-[#7A7268] pointer-events-none" />
+                            </div>
+
+                            {/* Budget */}
+                            <div className="relative">
+                                <label htmlFor="budget-range" className="sr-only">Budget Range</label>
+                                <select id="budget-range" value={formData.budget} onChange={e => update('budget', e.target.value)}
+                                    className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] appearance-none">
+                                    <option value="" disabled className="bg-[#1A1714]">Budget Range</option>
+                                    <option value="under50l" className="bg-[#1A1714]">Under ₹50 Lakhs</option>
+                                    <option value="50l-1cr" className="bg-[#1A1714]">₹50L – ₹1 Crore</option>
+                                    <option value="1cr-2cr" className="bg-[#1A1714]">₹1Cr – ₹2 Crore</option>
+                                    <option value="2cr-5cr" className="bg-[#1A1714]">₹2Cr – ₹5 Crore</option>
+                                    <option value="5cr+" className="bg-[#1A1714]">₹5 Crore+</option>
+                                </select>
+                                <ChevronDown className="absolute right-0 top-3 w-4 h-4 text-[#7A7268] pointer-events-none" />
+                            </div>
+
+                            {/* Message */}
                             <div className="relative group">
-                                <input type="tel" id="phone" required className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] transition-colors peer placeholder-transparent" placeholder="Phone" />
-                                <label htmlFor="phone" className="absolute left-0 -top-4 text-xs font-sans text-[#7A7268] transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-2 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#C9A96E]">Phone / WhatsApp</label>
+                                <textarea id="message" rows="4"
+                                    className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] transition-colors peer placeholder-transparent resize-none"
+                                    placeholder="Message"
+                                    value={formData.message} onChange={e => update('message', e.target.value)}
+                                />
+                                <label htmlFor="message" className="absolute left-0 -top-4 text-xs font-sans text-[#7A7268] transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-2 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#C9A96E]">Message / Requirements</label>
                             </div>
-                        </div>
 
-                        {/* Enquiry Type */}
-                        <div className="relative">
-                            <label htmlFor="enquiry-type" className="sr-only">Enquiry Type</label>
-                            <select id="enquiry-type" defaultValue="" aria-label="Select enquiry type" className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] appearance-none">
-                                <option value="" disabled className="bg-[#1A1714]">Enquiry Type</option>
-                                <option value="office" className="bg-[#1A1714]">Office Space</option>
-                                <option value="retail" className="bg-[#1A1714]">Retail / Shop</option>
-                                <option value="preleased" className="bg-[#1A1714]">Pre-Leased Investment</option>
-                                <option value="nri" className="bg-[#1A1714]">NRI Commercial Advisory</option>
-                                <option value="other" className="bg-[#1A1714]">Other</option>
-                            </select>
-                            <ChevronDown className="absolute right-0 top-3 w-4 h-4 text-[#7A7268] pointer-events-none" />
-                        </div>
-
-                        {/* City of Interest */}
-                        <div className="relative">
-                            <label htmlFor="city-interest" className="sr-only">City of Interest</label>
-                            <select id="city-interest" defaultValue="" aria-label="Select city of interest" className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] appearance-none">
-                                <option value="" disabled className="bg-[#1A1714]">City of Interest</option>
-                                <option value="pune" className="bg-[#1A1714]">Pune</option>
-                                <option value="mumbai" className="bg-[#1A1714]">Mumbai</option>
-                                <option value="bangalore" className="bg-[#1A1714]">Bangalore</option>
-                                <option value="other" className="bg-[#1A1714]">Other</option>
-                            </select>
-                            <ChevronDown className="absolute right-0 top-3 w-4 h-4 text-[#7A7268] pointer-events-none" />
-                        </div>
-
-                        {/* Budget */}
-                        <div className="relative">
-                            <label htmlFor="budget-range" className="sr-only">Budget Range</label>
-                            <select id="budget-range" defaultValue="" aria-label="Select budget range" className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] appearance-none">
-                                <option value="" disabled className="bg-[#1A1714]">Budget Range</option>
-                                <option value="under50l" className="bg-[#1A1714]">Under ₹50 Lakhs</option>
-                                <option value="50l-1cr" className="bg-[#1A1714]">₹50L – ₹1 Crore</option>
-                                <option value="1cr-2cr" className="bg-[#1A1714]">₹1Cr – ₹2 Crore</option>
-                                <option value="2cr-5cr" className="bg-[#1A1714]">₹2Cr – ₹5 Crore</option>
-                                <option value="5cr+" className="bg-[#1A1714]">₹5 Crore+</option>
-                            </select>
-                            <ChevronDown className="absolute right-0 top-3 w-4 h-4 text-[#7A7268] pointer-events-none" />
-                        </div>
-
-                        {/* Message */}
-                        <div className="relative group">
-                            <textarea id="message" rows="4" className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] transition-colors peer placeholder-transparent resize-none" placeholder="Message" />
-                            <label htmlFor="message" className="absolute left-0 -top-4 text-xs font-sans text-[#7A7268] transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-2 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#C9A96E]">Message / Requirements</label>
-                        </div>
-
-                        <button type="submit" className="w-full bg-[#C9A96E] text-[#0D0B09] py-4 font-sans text-[13px] uppercase tracking-widest hover:bg-[#F5F0E8] hover:scale-[1.02] transition-all shadow-lg cursor-pointer">
-                            Send Enquiry
-                        </button>
-                    </form>
+                            <button type="submit" disabled={isSubmitting}
+                                className="w-full bg-[#C9A96E] text-[#0D0B09] py-4 font-sans text-[13px] uppercase tracking-widest hover:bg-[#F5F0E8] hover:scale-[1.02] transition-all shadow-lg cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100">
+                                {isSubmitting ? 'Sending...' : 'Send Enquiry'}
+                            </button>
+                        </form>
+                    )}
                 </div>
             </div>
         </section>

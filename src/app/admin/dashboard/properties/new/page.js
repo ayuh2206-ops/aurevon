@@ -63,7 +63,7 @@ function PropertyForm() {
         amenities: [],
         featureImage: '', virtualTourUrl: '',
         tags: '', nriFriendly: false, featured: false,
-        shortDescription: '', fullDescription: '',
+        shortDescription: '', fullDescription: '', reraId: '',
     });
 
     const update = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
@@ -149,7 +149,8 @@ function PropertyForm() {
                 nriFriendly: formData.nriFriendly,
                 active: !isDraft,
                 shortDescription: formData.shortDescription,
-                fullDescription: formData.fullDescription
+                fullDescription: formData.fullDescription,
+                reraId: formData.reraId || '',
             };
 
             if (editId) {
@@ -429,6 +430,10 @@ function PropertyForm() {
                         <div>
                             <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Tags (comma separated)</label>
                             <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.tags} onChange={e => update('tags', e.target.value)} placeholder="high-yield, IT corridor, road-facing" />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">RERA Registration ID</label>
+                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.reraId} onChange={e => update('reraId', e.target.value)} placeholder="e.g. P52100093929" />
                         </div>
                         <div className="flex gap-6">
                             <label className="flex items-center gap-2 text-sm font-sans cursor-pointer">
