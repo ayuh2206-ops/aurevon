@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Building2, Plus, MessageCircle, Settings, LogOut, LayoutDashboard, FileText, Users, Filter } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
-const ADMIN_EMAIL = 'arundongare@aurevon.com'; // Change this to the real admin email
+const ADMIN_EMAIL = 'arundongare150@gmail.com'; // Change this to the real admin email
 
 const sidebarLinks = [
     { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },

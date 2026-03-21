@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
-const ADMIN_EMAIL = 'arundongare@aurevon.com';
+const ADMIN_EMAIL = 'arundongare150@gmail.com';
 
 export default function AdminLoginPage() {
     const { user, login, loading } = useAuth();
