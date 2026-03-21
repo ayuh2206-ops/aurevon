@@ -4,13 +4,26 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { addProperty, updateProperty, getProperty } from '@/lib/firebaseUtils';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 
-const amenitiesList = [
+const commercialAmenities = [
     'Security (24/7)', 'CCTV', 'Intercom', 'Power Backup',
     'Lift', 'Covered Parking', 'Visitor Parking', 'Conference Room',
     'Cafeteria', 'Fire Safety', 'Server Room', 'UPS/Generator',
     'High-Speed Internet', 'Reception/Lobby', 'Air Conditioning', 'Pantry',
-    'Loading Dock', 'Signage Rights', 'ATM', 'Metro Nearby',
-    'Swimming Pool', 'Gym', 'Clubhouse', 'Children Play Area', 'Garden', 'Balcony'
+    'Loading Dock', 'Signage Rights', 'ATM', 'Metro Nearby'
+];
+
+const residentialAmenities = [
+    'Security (24/7)', 'CCTV', 'Intercom', 'Power Backup',
+    'Lift', 'Covered Parking', 'Visitor Parking', 'Swimming Pool', 
+    'Gym', 'Clubhouse', 'Children Play Area', 'Garden',
+    'Jogging Track', 'Tennis Court', 'Squash Court', 'Vaastu Compliant',
+    'Gas Pipeline', 'Pet Friendly', 'Servant Room'
+];
+
+const plotAmenities = [
+    'Boundary Wall', 'Gated Community', 'Security (24/7)', 'CCTV',
+    'Water Connection', 'Electricity Connection', 'Sewage System',
+    'Internal Roads', 'Street Lights', 'Park/Garden'
 ];
 
 const subtypes = {
@@ -18,7 +31,7 @@ const subtypes = {
     'Retail': ['High Street Shop', 'Mall Space', 'Showroom', 'Kiosk', 'Food Court'],
     'Industrial': ['Warehouse', 'Factory', 'Cold Storage', 'Godown'],
     'IT Park': ['Grade A', 'Grade B', 'SEZ', 'IT/ITES'],
-    'Residential': ['Apartment', 'Villa', 'Independent House', 'Builder Floor', 'Studio'],
+    'Residential': ['Apartment', 'Villa', 'Independent House', 'Builder Floor', 'Studio', 'Duplex', 'Penthouse', 'Farmhouse'],
     'Plots & Lands': ['Agricultural', 'NA Plot', 'Commercial Land', 'Industrial Land', 'Residential Plot']
 };
 
@@ -45,7 +58,7 @@ function PropertyForm() {
         listingType: 'sale', statusRadio: 'active',
         city: 'Pune', locality: '', address: '', mapsUrl: '', landmark: '',
         priceMin: '', priceMax: '', priceSqft: '', negotiable: false, yieldPercent: '', maintenance: '',
-        superBuiltUp: '', carpetArea: '', bhk: '', bathrooms: '', floor: '', totalFloors: '',
+        superBuiltUp: '', carpetArea: '', bhk: '', bathrooms: '', balconies: '', floor: '', totalFloors: '',
         facing: '', parking: 'none', furnishing: 'unfurnished', possession: '', constructionStatus: 'ready',
         amenities: [],
         featureImage: '', virtualTourUrl: '',
@@ -60,6 +73,12 @@ function PropertyForm() {
             amenities: prev.amenities.includes(a) ? prev.amenities.filter(x => x !== a) : [...prev.amenities, a]
         }));
     };
+
+    const isResidential = formData.type === 'Residential';
+    const isPlot = formData.type === 'Plots & Lands';
+    const isRent = formData.listingType === 'lease' || formData.listingType === 'pre_leased';
+    const priceLabel = isRent ? 'Rent' : 'Price';
+    const currentAmenities = isPlot ? plotAmenities : (isResidential ? residentialAmenities : commercialAmenities);
 
     useEffect(() => {
         if (editId) {
@@ -110,6 +129,7 @@ function PropertyForm() {
                 superBuiltUp: formData.superBuiltUp,
                 carpetArea: formData.carpetArea,
                 bathrooms: formData.bathrooms,
+                balconies: formData.balconies,
                 floor: formData.floor,
                 totalFloors: formData.totalFloors,
                 facing: formData.facing,
@@ -248,15 +268,15 @@ function PropertyForm() {
                 {openSection === 'pricing' && (
                     <div className="py-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Min Price</label>
+                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Min {priceLabel}</label>
                             <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.priceMin} onChange={e => update('priceMin', e.target.value)} placeholder="e.g. 1.2Cr" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Max Price</label>
+                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Max {priceLabel}</label>
                             <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.priceMax} onChange={e => update('priceMax', e.target.value)} placeholder="e.g. 2.8Cr" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Price per Sq.ft.</label>
+                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">{priceLabel} per Sq.ft.</label>
                             <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.priceSqft} onChange={e => update('priceSqft', e.target.value)} />
                         </div>
                         <div>
@@ -265,7 +285,7 @@ function PropertyForm() {
                         </div>
                         <div className="flex items-center gap-2">
                             <input type="checkbox" checked={formData.negotiable} onChange={e => update('negotiable', e.target.checked)} className="accent-[#C9A96E]" />
-                            <label className="text-sm font-sans text-[#7A7268]">Price Negotiable</label>
+                            <label className="text-sm font-sans text-[#7A7268]">{priceLabel} Negotiable</label>
                         </div>
                     </div>
                 )}
@@ -275,63 +295,88 @@ function PropertyForm() {
                 {openSection === 'details' && (
                     <div className="py-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Super Built-Up Area (sqft)</label>
+                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">{isPlot ? 'Plot Area (sqft)' : 'Super Built-Up Area (sqft)'}</label>
                             <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.superBuiltUp} onChange={e => update('superBuiltUp', e.target.value)} />
                         </div>
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Carpet Area (sqft)</label>
-                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.carpetArea} onChange={e => update('carpetArea', e.target.value)} />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Space Configuration</label>
-                            <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.bhk} onChange={e => update('bhk', e.target.value)}>
-                                <option value="">Select</option>
-                                {['Single Cabin', 'Open Plan', '2-4 Cabins', '5-10 Cabins', '10+ Cabins', 'Full Floor', 'Warm Shell', 'Bare Shell'].map(b => <option key={b}>{b}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Washrooms</label>
-                            <input type="number" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.bathrooms} onChange={e => update('bathrooms', e.target.value)} />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Floor Number</label>
-                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.floor} onChange={e => update('floor', e.target.value)} />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Total Floors</label>
-                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.totalFloors} onChange={e => update('totalFloors', e.target.value)} />
-                        </div>
+                        {!isPlot && (
+                            <div>
+                                <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Carpet Area (sqft)</label>
+                                <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.carpetArea} onChange={e => update('carpetArea', e.target.value)} />
+                            </div>
+                        )}
+                        {!isPlot && (
+                            <div>
+                                <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">{isResidential ? 'BHK' : 'Space Configuration'}</label>
+                                <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.bhk} onChange={e => update('bhk', e.target.value)}>
+                                    <option value="">Select</option>
+                                    {isResidential 
+                                        ? ['1 RK', '1 BHK', '2 BHK', '3 BHK', '4 BHK', '4+ BHK', 'Studio'].map(b => <option key={b} value={b}>{b}</option>)
+                                        : ['Single Cabin', 'Open Plan', '2-4 Cabins', '5-10 Cabins', '10+ Cabins', 'Full Floor', 'Warm Shell', 'Bare Shell'].map(b => <option key={b} value={b}>{b}</option>)
+                                    }
+                                </select>
+                            </div>
+                        )}
+                        {!isPlot && (
+                            <div>
+                                <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">{isResidential ? 'Bathrooms' : 'Washrooms'}</label>
+                                <input type="number" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.bathrooms} onChange={e => update('bathrooms', e.target.value)} />
+                            </div>
+                        )}
+                        {isResidential && !isPlot && (
+                            <div>
+                                <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Balconies</label>
+                                <input type="number" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.balconies} onChange={e => update('balconies', e.target.value)} />
+                            </div>
+                        )}
+                        {!isPlot && (
+                            <div>
+                                <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Floor Number</label>
+                                <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.floor} onChange={e => update('floor', e.target.value)} />
+                            </div>
+                        )}
+                        {!isPlot && (
+                            <div>
+                                <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Total Floors</label>
+                                <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.totalFloors} onChange={e => update('totalFloors', e.target.value)} />
+                            </div>
+                        )}
                         <div>
                             <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Facing</label>
                             <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.facing} onChange={e => update('facing', e.target.value)}>
                                 <option value="">Select</option>
-                                {['East', 'West', 'North', 'South', 'North-East', 'North-West', 'South-East', 'South-West'].map(f => <option key={f}>{f}</option>)}
+                                {['East', 'West', 'North', 'South', 'North-East', 'North-West', 'South-East', 'South-West'].map(f => <option key={f} value={f}>{f}</option>)}
                             </select>
                         </div>
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Parking</label>
-                            <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.parking} onChange={e => update('parking', e.target.value)}>
-                                {['none', 'covered', 'open'].map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Furnishing</label>
-                            <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.furnishing} onChange={e => update('furnishing', e.target.value)}>
-                                {['unfurnished', 'semi-furnished', 'fully-furnished'].map(f => <option key={f} value={f}>{f.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</option>)}
-                            </select>
-                        </div>
+                        {!isPlot && (
+                            <div>
+                                <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Parking</label>
+                                <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.parking} onChange={e => update('parking', e.target.value)}>
+                                    {['none', 'covered', 'open'].map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
+                                </select>
+                            </div>
+                        )}
+                        {!isPlot && (
+                            <div>
+                                <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Furnishing</label>
+                                <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.furnishing} onChange={e => update('furnishing', e.target.value)}>
+                                    {['unfurnished', 'semi-furnished', 'fully-furnished'].map(f => <option key={f} value={f}>{f.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</option>)}
+                                </select>
+                            </div>
+                        )}
                         <div>
                             <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Possession Date</label>
                             <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.possession} onChange={e => update('possession', e.target.value)} placeholder="e.g. Dec 2025" />
                         </div>
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Construction Status</label>
-                            <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.constructionStatus} onChange={e => update('constructionStatus', e.target.value)}>
-                                <option value="ready">Ready to Move</option>
-                                <option value="under">Under Construction</option>
-                                <option value="new">New Launch</option>
-                            </select>
-                        </div>
+                        {!isPlot && (
+                            <div>
+                                <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Construction Status</label>
+                                <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.constructionStatus} onChange={e => update('constructionStatus', e.target.value)}>
+                                    <option value="ready">Ready to Move</option>
+                                    <option value="under">Under Construction</option>
+                                    <option value="new">New Launch</option>
+                                </select>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -339,7 +384,7 @@ function PropertyForm() {
                 <SectionHeader id="amenities" title="Amenities" />
                 {openSection === 'amenities' && (
                     <div className="py-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                        {amenitiesList.map(a => (
+                        {currentAmenities.map(a => (
                             <label key={a} className="flex items-center gap-2 text-sm font-sans text-[#7A7268] cursor-pointer">
                                 <input type="checkbox" checked={formData.amenities.includes(a)} onChange={() => toggleAmenity(a)} className="accent-[#C9A96E]" />
                                 {a}
