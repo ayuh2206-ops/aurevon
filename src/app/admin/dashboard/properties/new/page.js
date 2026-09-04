@@ -8,6 +8,7 @@ import { uploadToCloudinary } from '@/lib/cloudinary';
 import {
     AVAILABILITY_OPTIONS,
     DEFAULT_SITE_OPTIONS,
+    formatBhkOption,
     formatINR,
     normalizeProperty,
     parsePriceToNumber,
@@ -327,7 +328,7 @@ function PropertyForm() {
                             <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">BHK</label>
                             <select value={formData.bhk} onChange={(event) => update('bhk', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]">
                                 <option value="">Select</option>
-                                {(options.bhkOptions || []).map((item) => <option key={item} value={item}>{item} BHK</option>)}
+                                {(options.bhkOptions || []).map((item) => <option key={item} value={item}>{formatBhkOption(item)}</option>)}
                             </select>
                         </div>
                         <div className="grid grid-cols-3 gap-3">

@@ -8,6 +8,7 @@ import {
     DEFAULT_SITE_OPTIONS,
     RENT_BUDGET_RANGES,
     SALE_BUDGET_RANGES,
+    formatBhkOption,
     trackConversion,
 } from '@/lib/realEstate';
 import { useTypewriter } from '@/hooks/useTypewriter';
@@ -19,12 +20,19 @@ const placeholders = [
     "Search 'Pre-leased office 9% yield'",
 ];
 
-const searchModes = ['Buy', 'Rent', 'Sell', 'Commercial'];
+const searchModes = [
+    { id: 'buy', label: 'Buy', category: 'Residential', listingType: 'Sell' },
+    { id: 'rent', label: 'Rent', category: 'Residential', listingType: 'Rent/Lease' },
+    { id: 'sell', label: 'Sell', category: 'Residential', listingType: 'Sell', isSell: true },
+    { id: 'commercial-buy', label: 'Commercial Buy', category: 'Commercial', listingType: 'Sell' },
+    { id: 'commercial-rent', label: 'Commercial Rent', category: 'Commercial', listingType: 'Rent/Lease' },
+    { id: 'commercial-sell', label: 'Commercial Sell', category: 'Commercial', listingType: 'Sell', isSell: true },
+];
 
 export default function SearchBar() {
     const router = useRouter();
     const placeholder = useTypewriter(placeholders);
-    const [mode, setMode] = useState('Buy');
+    const [mode, setMode] = useState('buy');
     const [options, setOptions] = useState(DEFAULT_SITE_OPTIONS);
     const [searchText, setSearchText] = useState('');
     const [locality, setLocality] = useState('');
@@ -38,17 +46,19 @@ export default function SearchBar() {
         getSiteOptions().then(setOptions).catch(() => setOptions(DEFAULT_SITE_OPTIONS));
     }, []);
 
-    const category = mode === 'Commercial' ? 'Commercial' : 'Residential';
-    const listingType = mode === 'Rent' ? 'Rent/Lease' : 'Sell';
+    const selectedMode = searchModes.find((item) => item.id === mode) || searchModes[0];
+    const category = selectedMode.category;
+    const listingType = selectedMode.listingType;
+    const isSellMode = Boolean(selectedMode.isSell);
     const typeOptions = category === 'Commercial' ? options.commercialTypes : options.residentialTypes;
-    const budgetOptions = mode === 'Rent'
+    const budgetOptions = listingType === 'Rent/Lease'
         ? (options.rentBudgets || RENT_BUDGET_RANGES.map((item) => item.label))
         : (options.buyBudgets || SALE_BUDGET_RANGES.map((item) => item.label));
 
     const localityMatches = useMemo(() => {
         const all = options.localities || options.locations || [];
-        if (!locality.trim()) return all.slice(0, 10);
-        return all.filter((item) => item.toLowerCase().includes(locality.toLowerCase())).slice(0, 10);
+        if (!locality.trim()) return all;
+        return all.filter((item) => item.toLowerCase().includes(locality.toLowerCase()));
     }, [locality, options]);
 
     const updateSellLead = (field, value) => {
@@ -83,14 +93,15 @@ export default function SearchBar() {
                 name: sellLead.name.trim(),
                 phone: sellLead.phone.trim(),
                 propertyLocality: sellLead.locality.trim(),
-                propertyTitle: 'Sell Enquiry',
+                propertyTitle: `${category} Sell Enquiry`,
                 message: sellLead.notes.trim(),
-                source: 'Homepage Sell Tab',
-                requestType: 'Sell Property',
+                source: `Homepage ${selectedMode.label} Tab`,
+                requestType: `${category} Sell Property`,
                 status: 'New',
                 propertyType: sellLead.propertyType,
+                propertyCategory: category,
             });
-            trackConversion('sell_property_lead', { source: 'Homepage Sell Tab' });
+            trackConversion('sell_property_lead', { source: `Homepage ${selectedMode.label} Tab`, category });
             setSellStatus({ sent: true, error: '', sending: false });
             setSellLead({ name: '', phone: '', locality: '', propertyType: '', notes: '' });
         } catch (error) {
@@ -104,21 +115,22 @@ export default function SearchBar() {
             <div className="mb-5 flex w-full overflow-x-auto rounded-lg border border-[#2E2A25] bg-[#1A1714] p-1 scrollbar-hide md:w-fit">
                 {searchModes.map((item) => (
                     <button
-                        key={item}
+                        key={item.id}
                         type="button"
                         onClick={() => {
-                            setMode(item);
+                            setMode(item.id);
                             setBudget('');
                             setPropertyType('');
+                            setSellLead((prev) => ({ ...prev, propertyType: '' }));
                         }}
-                        className={`whitespace-nowrap rounded-md px-5 py-1.5 font-sans text-sm transition-colors ${mode === item ? 'bg-[#3E3A35] text-[#F5F0E8]' : 'text-[#7A7268] hover:text-[#F5F0E8]'}`}
+                        className={`whitespace-nowrap rounded-md px-5 py-1.5 font-sans text-sm transition-colors ${mode === item.id ? 'bg-[#3E3A35] text-[#F5F0E8]' : 'text-[#7A7268] hover:text-[#F5F0E8]'}`}
                     >
-                        {item}
+                        {item.label}
                     </button>
                 ))}
             </div>
 
-            {mode === 'Sell' ? (
+            {isSellMode ? (
                 <div>
                     {sellStatus.sent ? (
                         <div className="rounded-lg border border-[#2E2A25] bg-[#1A1714] p-6 text-center">
@@ -168,7 +180,7 @@ export default function SearchBar() {
                                 aria-label="Property type"
                             >
                                 <option value="">Property type</option>
-                                {[...options.residentialTypes, ...options.commercialTypes].map((item) => <option key={item}>{item}</option>)}
+                                {typeOptions.map((item) => <option key={item}>{item}</option>)}
                             </select>
                             <button
                                 type="submit"
@@ -247,7 +259,7 @@ export default function SearchBar() {
                                 aria-label="Bedroom count"
                             >
                                 <option value="">Any BHK</option>
-                                {(options.bhkOptions || []).map((item) => <option key={item} value={item}>{item} BHK</option>)}
+                                {(options.bhkOptions || []).map((item) => <option key={item} value={item}>{formatBhkOption(item)}</option>)}
                             </select>
                             <ChevronDown className="pointer-events-none absolute right-4 top-3 h-4 w-4 text-[#C9A96E]" />
                         </div>

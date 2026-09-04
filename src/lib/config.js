@@ -30,16 +30,7 @@ export const BUSINESS = {
   },
 };
 
-const configuredAdminEmails = (
-  process.env.NEXT_PUBLIC_ADMIN_EMAILS ||
-  process.env.NEXT_PUBLIC_ADMIN_EMAIL ||
-  "arundongare150@gmail.com,info@aurevonrealty.in"
-)
-  .split(",")
-  .map((email) => email.trim().toLowerCase())
-  .filter(Boolean);
-
-export const ADMIN_EMAILS = configuredAdminEmails;
+export const ADMIN_EMAILS = ["arundongare150@gmail.com"];
 
 export function isAdminEmail(email) {
   return Boolean(email && ADMIN_EMAILS.includes(String(email).toLowerCase()));

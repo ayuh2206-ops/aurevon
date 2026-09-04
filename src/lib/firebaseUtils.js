@@ -22,11 +22,13 @@ import {
   DEFAULT_FAQS,
   DEFAULT_SITE_OPTIONS,
   DEFAULT_TESTIMONIALS,
+  formatBhkOption,
   getSampleArticles,
   getSampleProperties,
   normalizeArticle,
   normalizeProperty,
   nowISO,
+  uniqueOptionList,
 } from "@/lib/realEstate";
 
 const PROPERTIES_COLLECTION = "properties";
@@ -123,13 +125,41 @@ function mapContentSettings(data = {}) {
 }
 
 function mapSiteOptions(data = {}) {
+  const mergeOptionArray = (key, ...legacyKeys) => {
+    const savedLists = [data[key], ...legacyKeys.map((legacyKey) => data[legacyKey])]
+      .filter(Array.isArray);
+    const merged = uniqueOptionList(DEFAULT_SITE_OPTIONS[key] || [], ...savedLists);
+    return key === "bhkOptions" ? uniqueOptionList(merged.map(formatBhkOption)) : merged;
+  };
+  const localities = mergeOptionArray("localities", "locations");
+
   return {
     ...DEFAULT_SITE_OPTIONS,
     ...data,
-    localities: data.localities || data.locations || DEFAULT_SITE_OPTIONS.localities,
-    locations: data.locations || data.localities || DEFAULT_SITE_OPTIONS.localities,
-    buyBudgets: data.buyBudgets || data.budgets || DEFAULT_SITE_OPTIONS.buyBudgets,
-    rentBudgets: data.rentBudgets || DEFAULT_SITE_OPTIONS.rentBudgets,
+    localities,
+    locations: localities,
+    localityZones: {
+      ...DEFAULT_SITE_OPTIONS.localityZones,
+      ...(data.localityZones || {}),
+    },
+    featuredLocalities: mergeOptionArray("featuredLocalities"),
+    listingTypes: mergeOptionArray("listingTypes"),
+    residentialTypes: mergeOptionArray("residentialTypes"),
+    commercialTypes: mergeOptionArray("commercialTypes"),
+    bhkOptions: mergeOptionArray("bhkOptions"),
+    furnishingOptions: mergeOptionArray("furnishingOptions"),
+    areaUnits: mergeOptionArray("areaUnits"),
+    facingOptions: mergeOptionArray("facingOptions"),
+    ageOptions: mergeOptionArray("ageOptions"),
+    possessionOptions: mergeOptionArray("possessionOptions"),
+    cardBadgeOptions: mergeOptionArray("cardBadgeOptions"),
+    amenities: mergeOptionArray("amenities"),
+    zoneOptions: mergeOptionArray("zoneOptions"),
+    buyBudgets: mergeOptionArray("buyBudgets", "budgets"),
+    rentBudgets: mergeOptionArray("rentBudgets"),
+    areas: mergeOptionArray("areas"),
+    yields: mergeOptionArray("yields"),
+    constructionStatuses: mergeOptionArray("constructionStatuses"),
   };
 }
 

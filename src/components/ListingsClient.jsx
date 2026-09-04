@@ -26,6 +26,7 @@ import {
     RENT_BUDGET_RANGES,
     SALE_BUDGET_RANGES,
     filterProperties,
+    formatBhkOption,
     normalizeListingType,
     normalizeProperty,
     sortProperties,
@@ -246,7 +247,7 @@ export default function ListingsClient() {
                             </select>
                             <select value={filters.bhk} onChange={(event) => updateParam('bhk', event.target.value)} className="rounded border border-[#D9D0C0] bg-white p-3 font-sans text-sm outline-none focus:border-[#C9A96E]" aria-label="Bedrooms">
                                 <option value="">Any BHK</option>
-                                {(options.bhkOptions || []).map((item) => <option key={item} value={item}>{item} BHK</option>)}
+                                {(options.bhkOptions || []).map((item) => <option key={item} value={item}>{formatBhkOption(item)}</option>)}
                             </select>
                             <select value={filters.budget} onChange={(event) => updateParam('budget', event.target.value)} className="rounded border border-[#D9D0C0] bg-white p-3 font-sans text-sm outline-none focus:border-[#C9A96E]" aria-label="Budget">
                                 <option value="">Any budget</option>

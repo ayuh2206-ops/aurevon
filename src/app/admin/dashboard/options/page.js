@@ -21,7 +21,7 @@ const optionGroups = [
     { key: 'listingTypes', label: 'Listing Types', description: 'Buy, rent, lease, and PG style listing modes.' },
     { key: 'residentialTypes', label: 'Residential Types', description: 'Residential property sub-types.' },
     { key: 'commercialTypes', label: 'Commercial Types', description: 'Commercial property sub-types.' },
-    { key: 'bhkOptions', label: 'BHK Options', description: 'Numeric bedroom filters.' },
+    { key: 'bhkOptions', label: 'BHK Options', description: 'Room configuration filters including RK, HK, BHK, studio, commercial, and plot values.' },
     { key: 'furnishingOptions', label: 'Furnishing', description: 'Furnishing filters and listing form values.' },
     { key: 'areaUnits', label: 'Area Units', description: 'Units accepted in admin area conversion.' },
     { key: 'facingOptions', label: 'Facing', description: 'Direction values shown on detail pages.' },
@@ -100,14 +100,6 @@ export default function SearchOptionsPage() {
     const coerceValue = (key, value) => {
         const text = value.trim();
         if (!text) return '';
-        if (key === 'bhkOptions') {
-            const number = Number(text);
-            if (!Number.isFinite(number) || number <= 0) {
-                setError('BHK options must be positive numbers.');
-                return '';
-            }
-            return number;
-        }
         return text;
     };
 
