@@ -47,6 +47,21 @@ function requireDb() {
   return db;
 }
 
+function isServerBuild() {
+  if (typeof window !== "undefined") return false;
+  return process.env.NEXT_PHASE === "phase-production-build"
+    || process.env.npm_lifecycle_event === "build";
+}
+
+function isPermissionDenied(error) {
+  return error?.code === "permission-denied";
+}
+
+function logReadError(message, error) {
+  if (isServerBuild() || isPermissionDenied(error)) return;
+  console.error(message, error);
+}
+
 function normalizeDate(value) {
   if (!value) return nowISO();
   if (typeof value === "string") return value;
@@ -56,7 +71,7 @@ function normalizeDate(value) {
 }
 
 async function readCollection(collectionName, orderField = "createdAt") {
-  if (!db) return [];
+  if (!db || isServerBuild()) return [];
   try {
     const ref = collection(db, collectionName);
     const q = orderField ? query(ref, orderBy(orderField, "desc")) : ref;
@@ -67,19 +82,19 @@ async function readCollection(collectionName, orderField = "createdAt") {
       const snapshot = await getDocs(collection(db, collectionName));
       return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
     } catch (fallbackError) {
-      console.error(`Error fetching ${collectionName}:`, fallbackError || error);
+      logReadError(`Error fetching ${collectionName}:`, fallbackError || error);
       return [];
     }
   }
 }
 
 async function readDoc(collectionName, docId) {
-  if (!db) return null;
+  if (!db || isServerBuild()) return null;
   try {
     const snapshot = await getDoc(doc(db, collectionName, docId));
     return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
   } catch (error) {
-    console.error(`Error fetching ${collectionName}/${docId}:`, error);
+    logReadError(`Error fetching ${collectionName}/${docId}:`, error);
     return null;
   }
 }
@@ -161,7 +176,7 @@ export async function getUserProperties(email) {
 export async function getProperty(id) {
   if (!id) return null;
 
-  if (db) {
+  if (db && !isServerBuild()) {
     try {
       const listingQuery = query(collection(db, PROPERTIES_COLLECTION), where("listingId", "==", id), limit(1));
       const listingSnapshot = await getDocs(listingQuery);
@@ -170,7 +185,7 @@ export async function getProperty(id) {
         return normalizeProperty({ id: match.id, ...match.data() });
       }
     } catch (error) {
-      console.error("Error looking up property by listingId:", error);
+      logReadError("Error looking up property by listingId:", error);
     }
 
     const byDocId = await readDoc(PROPERTIES_COLLECTION, id);
