@@ -2,20 +2,19 @@
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Building2, Plus, MessageCircle, Settings, LogOut, LayoutDashboard, FileText, Users, Filter } from 'lucide-react';
+import { Building2, Eye, MessageCircle, Settings, LogOut, LayoutDashboard, FileText, Users, Filter } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-
-const ADMIN_EMAIL = 'arundongare150@gmail.com'; // Change this to the real admin email
+import { isAdminEmail } from '@/lib/config';
 
 const sidebarLinks = [
     { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-    { label: 'Users', href: '/admin/dashboard/users', icon: Users },
     { label: 'Properties', href: '/admin/dashboard/properties', icon: Building2 },
-    { label: 'Add Property', href: '/admin/dashboard/properties/new', icon: Plus },
-    { label: 'Search Filters', href: '/admin/dashboard/options', icon: Filter },
-    { label: 'Blog Posts', href: '/admin/dashboard/blogs', icon: FileText },
-    { label: 'Enquiries', href: '/admin/dashboard/enquiries', icon: MessageCircle },
-    { label: 'Settings', href: '/admin/dashboard/settings', icon: Settings },
+    { label: 'Leads', href: '/admin/dashboard/enquiries', icon: MessageCircle },
+    { label: 'Journal', href: '/admin/dashboard/blogs', icon: FileText },
+    { label: 'Content', href: '/admin/dashboard/settings', icon: Settings },
+    { label: 'Options', href: '/admin/dashboard/options', icon: Filter },
+    { label: 'Users', href: '/admin/dashboard/users', icon: Users },
+    { label: 'View Site', href: '/', icon: Eye },
 ];
 
 export default function AdminDashboardLayout({ children }) {
@@ -25,7 +24,7 @@ export default function AdminDashboardLayout({ children }) {
 
     useEffect(() => {
         if (!loading) {
-            if (!user || user.email !== ADMIN_EMAIL) {
+            if (!user || !isAdminEmail(user.email)) {
                 router.push('/admin');
             }
         }
@@ -36,7 +35,7 @@ export default function AdminDashboardLayout({ children }) {
         router.push('/admin');
     };
 
-    if (loading || !user || user.email !== ADMIN_EMAIL) return null;
+    if (loading || !user || !isAdminEmail(user.email)) return null;
 
     return (
         <div className="min-h-screen bg-[#F5F0E8] flex flex-col md:flex-row font-sans">

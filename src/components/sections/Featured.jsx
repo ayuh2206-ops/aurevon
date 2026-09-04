@@ -1,78 +1,68 @@
 'use client';
-import Link from 'next/link';
-import { ArrowRight, MessageCircle, Globe } from 'lucide-react';
-import { SITE_CONFIG } from '@/lib/config';
 
-function PropertyCard({ property }) {
-    const handleWhatsApp = (e) => {
-        e.preventDefault();
-        const message = `Hi Arun, I'm interested in the commercial property: *${property.name}* located in ${property.locality}. Could you please share more details?`;
-        window.open(`https://wa.me/${SITE_CONFIG.ARUN_WHATSAPP}?text=${encodeURIComponent(message)}`, '_blank');
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ArrowRight } from 'lucide-react';
+import PropertyCard from '@/components/PropertyCard';
+import { useAuth } from '@/context/AuthContext';
+import { normalizeProperty, trackConversion } from '@/lib/realEstate';
+
+export default function Featured({ properties, categoryLabel, title, linkTo, bgClass }) {
+    const router = useRouter();
+    const { userProfile, openAuthModal, toggleSaved } = useAuth();
+
+    if (!properties || properties.length === 0) return null;
+
+    const handleSave = (property) => {
+        openAuthModal('save', async () => {
+            await toggleSaved(property.id);
+        });
+    };
+
+    const handleCompare = (property) => {
+        openAuthModal('compare', () => {
+            router.push(`/listings?compare=${encodeURIComponent(property.id)}`);
+        });
+    };
+
+    const handleShare = async (property) => {
+        const p = normalizeProperty(property);
+        const url = `${window.location.origin}/property/${p.listingId || p.id}`;
+        trackConversion('property_shared', { propertyId: p.id, source: 'Featured' });
+        if (navigator.share) {
+            await navigator.share({ title: p.title, text: p.shortDescription, url }).catch(() => {});
+        } else {
+            await navigator.clipboard.writeText(url);
+            alert('Property link copied.');
+        }
     };
 
     return (
-        <div className="group cursor-pointer bg-white rounded flex flex-col overflow-hidden border border-[#D9D0C0] hover:border-[#C9A96E] transition-colors duration-300">
-            <Link href={`/properties/${property.id}`} className="relative aspect-[4/5] overflow-hidden block">
-                <img src={property.image} alt={property.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" loading="lazy" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 p-5 w-full">
-                    <h3 className="font-serif text-2xl text-[#F5F0E8] leading-tight mb-1">{property.name}</h3>
-                    <p className="font-sans text-[11px] text-[#C9A96E] uppercase tracking-wider">{property.locality}</p>
-                </div>
-                <div className="absolute top-4 left-4">
-                    <span className="bg-[#8B4A2F] text-[#F5F0E8] font-sans text-[10px] uppercase px-3 py-1 rounded-full tracking-wider">
-                        {property.subtype}
-                    </span>
-                </div>
-                {property.nriFriendly && (
-                    <div className="absolute top-4 right-4">
-                        <span className="bg-[#0D0B09]/80 backdrop-blur text-[#C9A96E] border border-[#C9A96E] font-sans text-[10px] uppercase px-3 py-1 rounded-full tracking-wider flex items-center">
-                            <Globe className="w-3 h-3 mr-1" /> NRI Pick
-                        </span>
-                    </div>
-                )}
-            </Link>
-            <div className="p-5 flex flex-col flex-1 bg-[#F5F0E8]">
-                <div className="text-2xl font-serif text-[#1A1714] mb-4">{property.priceDisplay}</div>
-                <div className="flex flex-wrap gap-2 mb-4">
-                    <span className="border border-[#D9D0C0] px-2 py-1 text-[11px] font-sans text-[#7A7268] rounded">{property.subtype}</span>
-                    <span className="border border-[#D9D0C0] px-2 py-1 text-[11px] font-sans text-[#7A7268] rounded">{property.sqft} sqft</span>
-                    <span className="border border-[#D9D0C0] px-2 py-1 text-[11px] font-sans text-[#7A7268] rounded">{property.status}</span>
-                    {property.yield && <span className="border border-[#C9A96E] px-2 py-1 text-[11px] font-sans text-[#C9A96E] rounded">📈 {property.yield}</span>}
-                </div>
-                <div className="mt-auto pt-4 border-t border-[#D9D0C0]">
-                    <button
-                        onClick={handleWhatsApp}
-                        className="w-full flex justify-between items-center text-sm font-sans text-[#1A1714] group-hover:text-[#C9A96E] transition-colors cursor-pointer"
-                    >
-                        <span className="flex items-center"><MessageCircle className="w-4 h-4 mr-2" /> Enquire on WhatsApp</span>
-                        <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-export default function Featured({ properties, categoryLabel, title, linkTo, bgClass }) {
-    if (!properties || properties.length === 0) return null;
-
-    return (
         <section id="properties" className={`py-24 ${bgClass || 'bg-[#F5F0E8]'}`}>
-            <div className="max-w-7xl mx-auto px-6">
-                <div className="flex flex-col md:flex-row justify-between items-end mb-16">
+            <div className="mx-auto max-w-7xl px-6">
+                <div className="mb-16 flex flex-col items-start justify-between gap-6 md:flex-row md:items-end">
                     <div>
-                        <span className="block font-sans text-xs text-[#C9A96E] uppercase tracking-[0.2em] mb-4">{categoryLabel || 'Commercial Portfolio'}</span>
-                        <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl text-[#1A1714] whitespace-pre-line">{title || 'Spaces That\nDrive Business'}</h2>
+                        <span className="mb-4 block font-sans text-xs uppercase tracking-[0.2em] text-[#C9A96E]">{categoryLabel || 'Featured Portfolio'}</span>
+                        <h2 className="whitespace-pre-line font-serif text-4xl text-[#1A1714] md:text-5xl lg:text-6xl">{title || 'Spaces That\nDrive Business'}</h2>
                     </div>
-                    <Link href={linkTo || '/properties?category=Commercial'} className="mt-6 md:mt-0 font-sans text-[13px] text-[#8B4A2F] uppercase tracking-wider flex items-center hover:text-[#C9A96E] transition-colors">
-                        View All Properties <ArrowRight className="w-4 h-4 ml-2" />
+                    <Link href={linkTo || '/listings'} className="flex items-center font-sans text-[13px] uppercase tracking-wider text-[#8B4A2F] transition-colors hover:text-[#C9A96E]">
+                        View All Properties <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {properties.slice(0, 6).map((prop) => (
-                        <PropertyCard key={prop.id} property={prop} />
-                    ))}
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                    {properties.slice(0, 6).map((property) => {
+                        const p = normalizeProperty(property);
+                        return (
+                            <PropertyCard
+                                key={p.id}
+                                property={p}
+                                isSaved={userProfile?.savedProperties?.includes(p.id)}
+                                onSave={handleSave}
+                                onCompare={handleCompare}
+                                onShare={handleShare}
+                            />
+                        );
+                    })}
                 </div>
             </div>
         </section>

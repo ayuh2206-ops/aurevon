@@ -1,304 +1,271 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, MapPin, Mic, ChevronDown } from 'lucide-react';
+import { CheckCircle2, ChevronDown, MapPin, Search, Send } from 'lucide-react';
+import { addLead, getSiteOptions } from '@/lib/firebaseUtils';
+import {
+    DEFAULT_SITE_OPTIONS,
+    RENT_BUDGET_RANGES,
+    SALE_BUDGET_RANGES,
+    trackConversion,
+} from '@/lib/realEstate';
 import { useTypewriter } from '@/hooks/useTypewriter';
 
-import { getSearchOptions } from '@/lib/firebaseUtils';
-
-const commercialPlaceholders = [
+const placeholders = [
     "Search 'Office space in Kharadi'",
-    "Search 'Retail shop in Baner'",
+    "Search '3 BHK in Baner'",
+    "Search 'Retail shop in Balewadi'",
     "Search 'Pre-leased office 9% yield'",
-    "Search 'Co-working space Hinjewadi'"
 ];
 
-const residentialPlaceholders = [
-    "Search 'Apartment in Baner'",
-    "Search 'Villa in Wakad'",
-    "Search 'Independent House in Viman Nagar'",
-    "Search 'New Launch in Kharadi'"
-];
+const searchModes = ['Buy', 'Rent', 'Sell', 'Commercial'];
 
 export default function SearchBar() {
     const router = useRouter();
-    const [category, setCategory] = useState('Commercial');
-    const [activeTab, setActiveTab] = useState('Buy');
-    const [showTypeDropdown, setShowTypeDropdown] = useState(false);
-    const [selectedType, setSelectedType] = useState('All Commercial');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [openFilter, setOpenFilter] = useState(null);
-    const [locationSearchQuery, setLocationSearchQuery] = useState(''); // New state for location search
-    const [selectedFilters, setSelectedFilters] = useState({
-        'Location': '',
-        'Budget': '',
-        'Area (sqft)': '',
-        'Yield %': '',
-        'Construction Status': '',
-    });
-
-    const [dbOptions, setDbOptions] = useState(null); // Settings from Firestore
-
-    const dropdownRef = useRef(null);
-    const filtersRef = useRef(null);
-
-    // Fetch dynamic options from Firestore on mount
-    useEffect(() => {
-        async function fetchOptions() {
-            const options = await getSearchOptions();
-            setDbOptions(options);
-        }
-        fetchOptions();
-    }, []);
+    const placeholder = useTypewriter(placeholders);
+    const [mode, setMode] = useState('Buy');
+    const [options, setOptions] = useState(DEFAULT_SITE_OPTIONS);
+    const [searchText, setSearchText] = useState('');
+    const [locality, setLocality] = useState('');
+    const [propertyType, setPropertyType] = useState('');
+    const [bhk, setBhk] = useState('');
+    const [budget, setBudget] = useState('');
+    const [sellLead, setSellLead] = useState({ name: '', phone: '', locality: '', propertyType: '', notes: '' });
+    const [sellStatus, setSellStatus] = useState({ sent: false, error: '', sending: false });
 
     useEffect(() => {
-        function handleClickOutside(event) {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setShowTypeDropdown(false);
-            }
-            if (filtersRef.current && !filtersRef.current.contains(event.target)) {
-                setOpenFilter(null);
-            }
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
+        getSiteOptions().then(setOptions).catch(() => setOptions(DEFAULT_SITE_OPTIONS));
     }, []);
 
-    const tabs = category === 'Commercial'
-        ? ['Buy', 'Lease', 'New Launch', 'Pre-Leased', 'Projects']
-        : ['Buy', 'Rent', 'New Launch', 'Projects'];
+    const category = mode === 'Commercial' ? 'Commercial' : 'Residential';
+    const listingType = mode === 'Rent' ? 'Rent/Lease' : 'Sell';
+    const typeOptions = category === 'Commercial' ? options.commercialTypes : options.residentialTypes;
+    const budgetOptions = mode === 'Rent'
+        ? (options.rentBudgets || RENT_BUDGET_RANGES.map((item) => item.label))
+        : (options.buyBudgets || SALE_BUDGET_RANGES.map((item) => item.label));
 
-    const placeholder = useTypewriter(category === 'Commercial' ? commercialPlaceholders : residentialPlaceholders);
+    const localityMatches = useMemo(() => {
+        const all = options.localities || options.locations || [];
+        if (!locality.trim()) return all.slice(0, 10);
+        return all.filter((item) => item.toLowerCase().includes(locality.toLowerCase())).slice(0, 10);
+    }, [locality, options]);
 
-    // Safely fallback if dbOptions hasn't loaded yet
-    const propertyTypes = category === 'Commercial'
-        ? (dbOptions?.commercialTypes || [])
-        : (dbOptions?.residentialTypes || []);
-
-    const filterOptions = {
-        'Location': dbOptions?.locations || [],
-        'Budget': dbOptions?.budgets || [],
-        'Area (sqft)': dbOptions?.areas || [],
-        'Yield %': dbOptions?.yields || [],
-        'Construction Status': dbOptions?.constructionStatuses || [],
-        'Property Type': propertyTypes
+    const updateSellLead = (field, value) => {
+        setSellLead((prev) => ({ ...prev, [field]: value }));
     };
 
     const handleSearch = () => {
-        const queryParams = new URLSearchParams();
-        queryParams.append('category', category);
-        if (activeTab) queryParams.append('tab', activeTab);
-        if (selectedType && !selectedType.startsWith('All ')) queryParams.append('type', selectedType);
-        if (searchQuery.trim()) queryParams.append('q', searchQuery.trim());
-
-        Object.entries(selectedFilters).forEach(([key, value]) => {
-            if (value) queryParams.append(key.toLowerCase().replace(/[^a-z0-9]/g, ''), value);
-        });
-
-        router.push(`/properties?${queryParams.toString()}`);
+        const params = new URLSearchParams();
+        params.set('category', category);
+        params.set('listingType', listingType);
+        if (searchText.trim()) {
+            params.set('search', searchText.trim());
+            params.set('q', searchText.trim());
+        }
+        if (locality.trim()) params.set('locality', locality.trim());
+        if (propertyType) params.set('type', propertyType);
+        if (bhk) params.set('bhk', bhk);
+        if (budget) params.set('budget', budget);
+        router.push(`/listings?${params.toString()}`);
     };
 
-    const handleKeyDown = (e) => {
-        if (e.key === 'Enter') {
-            handleSearch();
+    const handleSellSubmit = async (event) => {
+        event.preventDefault();
+        if (!sellLead.name.trim() || sellLead.phone.replace(/\D/g, '').length < 8) {
+            setSellStatus({ sent: false, error: 'Please enter your name and a valid phone number.', sending: false });
+            return;
+        }
+
+        setSellStatus({ sent: false, error: '', sending: true });
+        try {
+            await addLead({
+                name: sellLead.name.trim(),
+                phone: sellLead.phone.trim(),
+                propertyLocality: sellLead.locality.trim(),
+                propertyTitle: 'Sell Enquiry',
+                message: sellLead.notes.trim(),
+                source: 'Homepage Sell Tab',
+                requestType: 'Sell Property',
+                status: 'New',
+                propertyType: sellLead.propertyType,
+            });
+            trackConversion('sell_property_lead', { source: 'Homepage Sell Tab' });
+            setSellStatus({ sent: true, error: '', sending: false });
+            setSellLead({ name: '', phone: '', locality: '', propertyType: '', notes: '' });
+        } catch (error) {
+            console.error('Sell lead failed:', error);
+            setSellStatus({ sent: false, error: 'Could not send right now. Please use WhatsApp or try again.', sending: false });
         }
     };
 
     return (
-        <div className="w-full max-w-5xl mx-auto bg-[#0D0B09]/85 backdrop-blur-xl rounded-xl border-t-2 border-[#C9A96E] shadow-[0_24px_60px_rgba(0,0,0,0.5)] p-4 md:p-6 relative z-50">
-            {/* Category Toggle */}
-            <div className="flex bg-[#1A1714] p-1 rounded-lg w-fit mb-5 mx-auto md:mx-0 border border-[#2E2A25]">
-                <button
-                    onClick={() => { setCategory('Commercial'); setSelectedType('All Commercial'); setActiveTab('Buy'); }}
-                    className={`px-6 py-1.5 rounded-md font-sans text-sm transition-colors ${category === 'Commercial' ? 'bg-[#3E3A35] text-[#F5F0E8]' : 'text-[#7A7268] hover:text-[#F5F0E8] cursor-pointer'}`}
-                >
-                    Commercial
-                </button>
-                <button
-                    onClick={() => { setCategory('Residential'); setSelectedType('All Residential'); setActiveTab('Buy'); }}
-                    className={`px-6 py-1.5 rounded-md font-sans text-sm transition-colors ${category === 'Residential' ? 'bg-[#3E3A35] text-[#F5F0E8]' : 'text-[#7A7268] hover:text-[#F5F0E8] cursor-pointer'}`}
-                >
-                    Residential
-                </button>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex overflow-x-auto space-x-6 border-b border-[#2E2A25] pb-3 mb-4 scrollbar-hide">
-                {tabs.map(tab => (
+        <div className="relative z-50 mx-auto w-full max-w-5xl rounded-xl border-t-2 border-[#C9A96E] bg-[#0D0B09]/85 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.5)] backdrop-blur-xl md:p-6">
+            <div className="mb-5 flex w-full overflow-x-auto rounded-lg border border-[#2E2A25] bg-[#1A1714] p-1 scrollbar-hide md:w-fit">
+                {searchModes.map((item) => (
                     <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`whitespace-nowrap font-sans text-[13px] uppercase tracking-wider relative pb-3 ${activeTab === tab ? 'text-[#F5F0E8]' : 'text-[#7A7268] hover:text-[#F5F0E8]'} transition-colors cursor-pointer`}
+                        key={item}
+                        type="button"
+                        onClick={() => {
+                            setMode(item);
+                            setBudget('');
+                            setPropertyType('');
+                        }}
+                        className={`whitespace-nowrap rounded-md px-5 py-1.5 font-sans text-sm transition-colors ${mode === item ? 'bg-[#3E3A35] text-[#F5F0E8]' : 'text-[#7A7268] hover:text-[#F5F0E8]'}`}
                     >
-                        {tab}
-                        {tab === 'New Launch' && <span className="absolute -top-1 -right-2 w-1.5 h-1.5 bg-red-500 rounded-full"></span>}
-                        {activeTab === tab && <div className="absolute bottom-0 left-0 w-full h-[3px] bg-[#C9A96E]"></div>}
+                        {item}
                     </button>
                 ))}
             </div>
 
-            {/* Search Row */}
-            <div className="flex flex-col md:flex-row items-center gap-4 bg-[#1A1714] p-2 rounded-lg border border-[#2E2A25]">
-                {/* Property Type Dropdown */}
-                <div className="relative w-full md:w-auto md:min-w-[170px] border-b md:border-b-0 md:border-r border-[#2E2A25] pb-2 md:pb-0 md:pr-4" ref={dropdownRef}>
-                    <button
-                        onClick={() => setShowTypeDropdown(!showTypeDropdown)}
-                        className="w-full flex items-center justify-between font-sans text-sm text-[#F5F0E8] p-2 cursor-pointer"
-                        aria-label="Select property type"
-                    >
-                        <span className="truncate">{selectedType}</span>
-                        <ChevronDown className={`w-4 h-4 text-[#C9A96E] ml-2 transition-transform duration-200 ${showTypeDropdown ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {showTypeDropdown && (
-                        <div className="absolute top-full left-0 mt-4 w-[280px] sm:w-[320px] md:w-[500px] bg-[#0D0B09]/95 backdrop-blur-md border border-[#2E2A25] rounded-lg p-4 md:p-6 shadow-2xl z-50">
-                            <div className="flex justify-between items-center mb-4">
-                                <p className="text-[#C9A96E] font-serif text-lg md:text-xl">Property Types</p>
-                                <button
-                                    onClick={() => setSelectedType(`All ${category}`)}
-                                    className="text-[#7A7268] hover:text-[#C9A96E] text-xs font-sans uppercase cursor-pointer transition-colors"
-                                    aria-label="Clear all property type filters"
-                                >
-                                    Clear All
-                                </button>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
-                                {propertyTypes.map(type => (
-                                    <label key={type} className="flex items-center space-x-2 text-[#F5F0E8] text-sm font-sans cursor-pointer group">
-                                        <input
-                                            type="radio"
-                                            name="propertyType"
-                                            value={type}
-                                            checked={selectedType === type}
-                                            onChange={(e) => {
-                                                setSelectedType(e.target.value);
-                                                setShowTypeDropdown(false);
-                                            }}
-                                            className="hidden"
-                                        />
-                                        <div className={`w-4 h-4 shrink-0 border ${selectedType === type ? 'border-[#C9A96E] bg-[#C9A96E]/20' : 'border-[#7A7268]'} rounded group-hover:border-[#C9A96E] flex items-center justify-center transition-colors`}>
-                                            {selectedType === type && <div className="w-2 h-2 bg-[#C9A96E] rounded-sm"></div>}
-                                        </div>
-                                        <span className={selectedType === type ? 'text-[#C9A96E]' : 'group-hover:text-[#C9A96E] transition-colors'}>{type}</span>
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Search Input */}
-                <div className="flex-1 flex items-center w-full px-2">
-                    <Search className="w-5 h-5 text-[#C9A96E] mr-3 shrink-0" />
-                    <label htmlFor="property-search" className="sr-only">Search properties</label>
-                    <input
-                        id="property-search"
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder={placeholder}
-                        className="w-full bg-transparent border-none outline-none text-[#F5F0E8] font-sans text-[15px] placeholder:text-[#7A7268]"
-                    />
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center space-x-2 w-full md:w-auto justify-between md:justify-end">
-                    <div className="flex space-x-2">
-                        <button className="w-10 h-10 rounded-full bg-[#2E2A25] hover:bg-[#C9A96E]/20 flex items-center justify-center text-[#C9A96E] transition-colors cursor-pointer" aria-label="Use my location">
-                            <MapPin className="w-4 h-4" />
-                        </button>
-                        <button className="w-10 h-10 rounded-full bg-[#2E2A25] hover:bg-[#C9A96E]/20 flex items-center justify-center text-[#C9A96E] transition-colors cursor-pointer" aria-label="Voice search">
-                            <Mic className="w-4 h-4" />
-                        </button>
-                    </div>
-                    <button
-                        onClick={handleSearch}
-                        className="bg-[#C9A96E] text-[#0D0B09] font-sans font-medium uppercase text-sm px-6 py-3 rounded hover:bg-[#F5F0E8] transition-colors whitespace-nowrap cursor-pointer">
-                        Search
-                    </button>
-                </div>
-            </div>
-
-            {/* Filter Pills */}
-            <div className="mt-5 flex flex-wrap gap-3" ref={filtersRef}>
-                {Object.keys(filterOptions).map(filter => {
-                    const isOpen = openFilter === filter;
-                    let displayValue = filter;
-
-                    if (filter === 'Property Type') {
-                        if (selectedType && !selectedType.startsWith('All ')) displayValue = selectedType;
-                    } else if (selectedFilters[filter]) {
-                        displayValue = selectedFilters[filter];
-                    }
-
-                    return (
-                        <div key={filter} className="relative">
+            {mode === 'Sell' ? (
+                <div>
+                    {sellStatus.sent ? (
+                        <div className="rounded-lg border border-[#2E2A25] bg-[#1A1714] p-6 text-center">
+                            <CheckCircle2 className="mx-auto mb-3 h-9 w-9 text-[#C9A96E]" />
+                            <h3 className="font-serif text-2xl text-[#F5F0E8]">Sell enquiry received</h3>
+                            <p className="mx-auto mt-2 max-w-md font-sans text-sm text-[#9E968E]">
+                                The advisory team will review your property details and call you shortly.
+                            </p>
                             <button
-                                onClick={() => setOpenFilter(isOpen ? null : filter)}
-                                className={`shrink-0 flex items-center px-4 py-1.5 rounded-full border text-xs font-sans uppercase tracking-wider transition-colors cursor-pointer ${displayValue !== filter || isOpen
-                                    ? 'border-[#C9A96E] bg-[#C9A96E] text-[#0D0B09]'
-                                    : 'border-[#C9A96E] text-[#F5F0E8] hover:bg-[#C9A96E]/20'
-                                    }`}
+                                type="button"
+                                onClick={() => setSellStatus({ sent: false, error: '', sending: false })}
+                                className="mt-5 font-sans text-xs uppercase tracking-widest text-[#C9A96E] hover:text-[#F5F0E8]"
                             >
-                                <span className="truncate max-w-[120px]">{displayValue}</span>
-                                <ChevronDown className={`w-3 h-3 ml-1 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                                Send another
                             </button>
-
-                            {/* Pill Dropdown */}
-                            {isOpen && (
-                                <div className={`absolute top-full left-0 mt-2 ${filter === 'Location' ? 'w-64 max-h-80 overflow-y-auto scrollbar-hide' : 'w-48 max-h-80 overflow-y-auto scrollbar-hide'} bg-[#0D0B09]/95 backdrop-blur-md border border-[#2E2A25] rounded-lg py-2 shadow-2xl z-[999]`}>
-                                    <button
-                                        onClick={() => {
-                                            if (filter === 'Property Type') setSelectedType(`All ${category}`);
-                                            else setSelectedFilters(prev => ({ ...prev, [filter]: '' }));
-                                            setOpenFilter(null);
-                                        }}
-                                        className="w-full text-left px-4 py-2 text-xs font-sans text-[#7A7268] hover:text-[#C9A96E] hover:bg-[#1A1714] transition-colors sticky top-0 bg-[#0D0B09]/95 backdrop-blur-md z-10"
-                                    >
-                                        Clear Selection
-                                    </button>
-                                    <div className="w-full h-px bg-[#2E2A25] my-1"></div>
-
-                                    {/* Local Search Input for Locations */}
-                                    {filter === 'Location' && (
-                                        <div className="px-3 pb-2 sticky top-[36px] bg-[#0D0B09]/95 backdrop-blur-md z-10">
-                                            <input
-                                                type="text"
-                                                value={locationSearchQuery}
-                                                onChange={(e) => setLocationSearchQuery(e.target.value)}
-                                                placeholder="Search location..."
-                                                className="w-full bg-[#1A1714] border border-[#2E2A25] text-sm text-[#F5F0E8] p-1.5 rounded outline-none focus:border-[#C9A96E] font-sans"
-                                                onClick={(e) => e.stopPropagation()}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {(filter === 'Location'
-                                        ? filterOptions[filter].filter(loc => loc.toLowerCase().includes(locationSearchQuery.toLowerCase()))
-                                        : filterOptions[filter]
-                                    ).map(option => (
-                                        <button
-                                            key={option}
-                                            onClick={() => {
-                                                if (filter === 'Property Type') setSelectedType(option);
-                                                else setSelectedFilters(prev => ({ ...prev, [filter]: option }));
-                                                setOpenFilter(null);
-                                            }}
-                                            className={`w-full text-left px-4 py-2 text-sm font-sans transition-colors ${(filter === 'Property Type' ? selectedType === option : selectedFilters[filter] === option)
-                                                ? 'text-[#C9A96E] bg-[#1A1714]'
-                                                : 'text-[#F5F0E8] hover:text-[#C9A96E] hover:bg-[#1A1714]'
-                                                }`}
-                                        >
-                                            {option}
-                                        </button>
-                                    ))}
+                        </div>
+                    ) : (
+                        <form onSubmit={handleSellSubmit} className="grid grid-cols-1 gap-4 md:grid-cols-5">
+                            {sellStatus.error && (
+                                <div className="md:col-span-5 rounded border border-red-700 bg-red-900/30 p-3 font-sans text-sm text-red-200">
+                                    {sellStatus.error}
                                 </div>
                             )}
+                            <input
+                                value={sellLead.name}
+                                onChange={(event) => updateSellLead('name', event.target.value)}
+                                placeholder="Owner name"
+                                className="rounded-lg border border-[#2E2A25] bg-[#1A1714] px-3 py-3 font-sans text-sm text-[#F5F0E8] outline-none focus:border-[#C9A96E]"
+                            />
+                            <input
+                                value={sellLead.phone}
+                                onChange={(event) => updateSellLead('phone', event.target.value)}
+                                placeholder="Phone / WhatsApp"
+                                className="rounded-lg border border-[#2E2A25] bg-[#1A1714] px-3 py-3 font-sans text-sm text-[#F5F0E8] outline-none focus:border-[#C9A96E]"
+                            />
+                            <input
+                                value={sellLead.locality}
+                                onChange={(event) => updateSellLead('locality', event.target.value)}
+                                placeholder="Locality"
+                                className="rounded-lg border border-[#2E2A25] bg-[#1A1714] px-3 py-3 font-sans text-sm text-[#F5F0E8] outline-none focus:border-[#C9A96E]"
+                                list="sell-localities"
+                            />
+                            <select
+                                value={sellLead.propertyType}
+                                onChange={(event) => updateSellLead('propertyType', event.target.value)}
+                                className="rounded-lg border border-[#2E2A25] bg-[#1A1714] px-3 py-3 font-sans text-sm text-[#F5F0E8] outline-none focus:border-[#C9A96E]"
+                                aria-label="Property type"
+                            >
+                                <option value="">Property type</option>
+                                {[...options.residentialTypes, ...options.commercialTypes].map((item) => <option key={item}>{item}</option>)}
+                            </select>
+                            <button
+                                type="submit"
+                                disabled={sellStatus.sending}
+                                className="flex items-center justify-center gap-2 rounded bg-[#C9A96E] px-5 py-3 font-sans text-xs uppercase tracking-widest text-[#0D0B09] transition-colors hover:bg-[#F5F0E8] disabled:opacity-60"
+                            >
+                                <Send className="h-4 w-4" /> {sellStatus.sending ? 'Sending' : 'Request Valuation'}
+                            </button>
+                            <textarea
+                                value={sellLead.notes}
+                                onChange={(event) => updateSellLead('notes', event.target.value)}
+                                placeholder="Notes about your property (optional)"
+                                className="md:col-span-5 rounded-lg border border-[#2E2A25] bg-[#1A1714] px-3 py-3 font-sans text-sm text-[#F5F0E8] outline-none focus:border-[#C9A96E]"
+                                rows={2}
+                            />
+                        </form>
+                    )}
+                    <datalist id="sell-localities">
+                        {(options.localities || []).map((item) => <option key={item} value={item} />)}
+                    </datalist>
+                </div>
+            ) : (
+                <div>
+                    <div className="flex flex-col gap-4 rounded-lg border border-[#2E2A25] bg-[#1A1714] p-2 md:flex-row md:items-center">
+                        <div className="flex flex-1 items-center px-2">
+                            <Search className="mr-3 h-5 w-5 shrink-0 text-[#C9A96E]" />
+                            <label htmlFor="property-search" className="sr-only">Search properties</label>
+                            <input
+                                id="property-search"
+                                value={searchText}
+                                onChange={(event) => setSearchText(event.target.value)}
+                                onKeyDown={(event) => event.key === 'Enter' && handleSearch()}
+                                placeholder={placeholder}
+                                className="w-full border-none bg-transparent font-sans text-[15px] text-[#F5F0E8] outline-none placeholder:text-[#7A7268]"
+                            />
                         </div>
-                    );
-                })}
-            </div>
+                        <button
+                            onClick={handleSearch}
+                            className="rounded bg-[#C9A96E] px-6 py-3 font-sans text-sm font-medium uppercase text-[#0D0B09] transition-colors hover:bg-[#F5F0E8]"
+                        >
+                            Search
+                        </button>
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="relative">
+                            <MapPin className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-[#C9A96E]" />
+                            <input
+                                value={locality}
+                                onChange={(event) => setLocality(event.target.value)}
+                                placeholder="Locality"
+                                list="home-localities"
+                                className="w-full rounded-full border border-[#C9A96E] bg-transparent py-2 pl-9 pr-4 font-sans text-sm text-[#F5F0E8] outline-none placeholder:text-[#7A7268]"
+                            />
+                            <datalist id="home-localities">
+                                {localityMatches.map((item) => <option key={item} value={item} />)}
+                            </datalist>
+                        </div>
+                        <div className="relative">
+                            <select
+                                value={propertyType}
+                                onChange={(event) => setPropertyType(event.target.value)}
+                                className="w-full appearance-none rounded-full border border-[#C9A96E] bg-[#0D0B09] px-4 py-2 font-sans text-sm text-[#F5F0E8] outline-none"
+                                aria-label="Property type"
+                            >
+                                <option value="">All property types</option>
+                                {typeOptions.map((item) => <option key={item}>{item}</option>)}
+                            </select>
+                            <ChevronDown className="pointer-events-none absolute right-4 top-3 h-4 w-4 text-[#C9A96E]" />
+                        </div>
+                        <div className="relative">
+                            <select
+                                value={bhk}
+                                onChange={(event) => setBhk(event.target.value)}
+                                className="w-full appearance-none rounded-full border border-[#C9A96E] bg-[#0D0B09] px-4 py-2 font-sans text-sm text-[#F5F0E8] outline-none"
+                                aria-label="Bedroom count"
+                            >
+                                <option value="">Any BHK</option>
+                                {(options.bhkOptions || []).map((item) => <option key={item} value={item}>{item} BHK</option>)}
+                            </select>
+                            <ChevronDown className="pointer-events-none absolute right-4 top-3 h-4 w-4 text-[#C9A96E]" />
+                        </div>
+                        <div className="relative">
+                            <select
+                                value={budget}
+                                onChange={(event) => setBudget(event.target.value)}
+                                className="w-full appearance-none rounded-full border border-[#C9A96E] bg-[#0D0B09] px-4 py-2 font-sans text-sm text-[#F5F0E8] outline-none"
+                                aria-label="Budget range"
+                            >
+                                <option value="">Any budget</option>
+                                {budgetOptions.map((item) => <option key={item}>{item}</option>)}
+                            </select>
+                            <ChevronDown className="pointer-events-none absolute right-4 top-3 h-4 w-4 text-[#C9A96E]" />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

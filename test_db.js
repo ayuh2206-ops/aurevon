@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { getFirestore, collection, getDocs } from "firebase/firestore";
 import dotenv from "dotenv";
 
 dotenv.config({ path: ".env.local" });
@@ -20,14 +20,8 @@ async function test() {
     try {
         console.log("Fetching...");
         const snapshot = await getDocs(collection(db, "properties"));
-        const docs = snapshot.docs.map(d => ({id: d.id, name: d.data().name}));
+        const docs = snapshot.docs.map(d => ({ id: d.id, name: d.data().name || d.data().title || "Untitled" }));
         console.log("Docs:", docs);
-        
-        if (docs.length > 0) {
-            console.log("Deleting:", docs[0].id);
-            await deleteDoc(doc(db, "properties", docs[0].id));
-            console.log("Deleted.");
-        }
     } catch (e) {
         console.error("Error:", e);
     }

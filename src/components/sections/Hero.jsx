@@ -1,14 +1,22 @@
 'use client';
+import { useEffect, useState } from 'react';
 import SearchBar from '@/components/SearchBar';
+import { getContentSettings } from '@/lib/firebaseUtils';
+import { DEFAULT_CONTENT_SETTINGS } from '@/lib/realEstate';
 
 export default function Hero({ isLoaded }) {
+    const [settings, setSettings] = useState(DEFAULT_CONTENT_SETTINGS);
     const t = `transition-all duration-1000 ease-[cubic-bezier(0.25,1,0.5,1)] ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`;
+
+    useEffect(() => {
+        getContentSettings().then(setSettings).catch(() => {});
+    }, []);
 
     return (
         <section className="relative z-50 min-h-screen w-full flex flex-col pt-32 pb-8 bg-[#0D0B09]">
             {/* Background Image */}
             <img
-                src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1920&q=75"
+                src={settings.heroImage || DEFAULT_CONTENT_SETTINGS.heroImage}
                 alt=""
                 role="presentation"
                 fetchPriority="high"
@@ -23,13 +31,13 @@ export default function Hero({ isLoaded }) {
                         Pune&apos;s Most Trusted Real Estate Partner Since 2001
                     </span>
                     <h1 className={`font-serif text-5xl sm:text-6xl md:text-8xl lg:text-[110px] leading-[1.05] text-[#F5F0E8] font-light mb-6 ${t} delay-200`}>
-                        Where Vision <br /> Meets Reality.
+                        {settings.heroTitle || DEFAULT_CONTENT_SETTINGS.heroTitle}
                     </h1>
                     <p className={`font-sans text-[#F5F0E8]/80 max-w-lg text-sm md:text-base leading-relaxed mb-10 ${t} delay-300`}>
-                        25 years of curating exceptional properties across India — premium homes, offices, retail, and co-working spaces. 1,000+ deals closed. RERA registered.
+                        {settings.heroSubtitle || DEFAULT_CONTENT_SETTINGS.heroSubtitle}
                     </p>
                     <div className={`flex flex-col sm:flex-row gap-4 mb-8 ${t} delay-[400ms]`}>
-                        <a href="/properties" className="bg-[#C9A96E] text-[#0D0B09] px-8 py-3.5 font-sans text-xs uppercase tracking-widest hover:bg-[#F5F0E8] transition-colors shadow-lg shadow-[#C9A96E]/20 text-center">
+                        <a href="/listings" className="bg-[#C9A96E] text-[#0D0B09] px-8 py-3.5 font-sans text-xs uppercase tracking-widest hover:bg-[#F5F0E8] transition-colors shadow-lg shadow-[#C9A96E]/20 text-center">
                             Explore Properties
                         </a>
                         <a href="#nri-desk" className="border border-[#C9A96E] text-[#C9A96E] px-8 py-3.5 font-sans text-xs uppercase tracking-widest hover:bg-[#C9A96E] hover:text-[#0D0B09] transition-colors text-center">
@@ -40,7 +48,7 @@ export default function Hero({ isLoaded }) {
             </div>
 
             {/* Search Bar */}
-            <div className={`relative z-20 w-full mb-8 ${t} delay-[500ms]`}>
+            <div id="home-search" className={`relative z-20 w-full mb-8 ${t} delay-[500ms]`}>
                 <SearchBar />
             </div>
 

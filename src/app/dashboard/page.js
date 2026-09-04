@@ -1,10 +1,11 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { getUserProperties, deleteProperty } from '@/lib/firebaseUtils';
 import Link from 'next/link';
 import { Plus, Trash2, LogOut } from 'lucide-react';
+import { isAdminEmail } from '@/lib/config';
 
 export default function UserDashboard() {
     const { user, loading, logout } = useAuth();
@@ -12,15 +13,8 @@ export default function UserDashboard() {
     const [properties, setProperties] = useState([]);
     const [isLoadingData, setIsLoadingData] = useState(true);
 
-    useEffect(() => {
-        if (!loading && !user) {
-            router.push('/login');
-        } else if (user) {
-            loadUserProperties();
-        }
-    }, [user, loading, router]);
-
-    const loadUserProperties = async () => {
+    const loadUserProperties = useCallback(async () => {
+        if (!user?.email) return;
         setIsLoadingData(true);
         try {
             const data = await getUserProperties(user.email);
@@ -30,7 +24,15 @@ export default function UserDashboard() {
         } finally {
             setIsLoadingData(false);
         }
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push('/login');
+        } else if (user) {
+            loadUserProperties();
+        }
+    }, [user, loading, router, loadUserProperties]);
 
     const handleDelete = async (id, image) => {
         if (confirm('Are you sure you want to delete this listing?')) {
@@ -57,9 +59,7 @@ export default function UserDashboard() {
         return <div className="min-h-screen py-32 flex justify-center bg-[#F5F0E8]"><div className="w-8 h-8 border-2 border-[#C9A96E] border-t-transparent rounded-full animate-spin"></div></div>;
     }
 
-    // Since anyone logged in could be an admin, add a quick link for admin dashboard if their email matches an admin list
-    // For simplicity right now, if they want admin they go to /admin/dashboard manually.
-    const isAdmin = user.email === 'admin@aurevon.com'; // Hardcoded check or use role-based logic later
+    const isAdmin = isAdminEmail(user.email);
 
     return (
         <div className="min-h-screen bg-[#F5F0E8]">
@@ -108,7 +108,7 @@ export default function UserDashboard() {
                     ) : properties.length === 0 ? (
                         <div className="p-12 text-center">
                             <h2 className="text-xl font-serif text-[#1A1714] mb-2">No Properties Listed</h2>
-                            <p className="text-[#7A7268] font-sans mb-6">You haven't submitted any properties yet.</p>
+                            <p className="text-[#7A7268] font-sans mb-6">You haven&apos;t submitted any properties yet.</p>
                             <Link href="/submit-property" className="inline-block border border-[#C9A96E] text-[#C9A96E] px-6 py-2 rounded text-sm uppercase tracking-wider hover:bg-[#C9A96E] hover:text-white transition-colors">
                                 Submit Property
                             </Link>

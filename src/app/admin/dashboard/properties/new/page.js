@@ -1,38 +1,25 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { addProperty, updateProperty, getProperty } from '@/lib/firebaseUtils';
+import { Check, ImagePlus, Loader2, Plus, Trash2 } from 'lucide-react';
+import { addProperty, getProperty, getSiteOptions, updateProperty } from '@/lib/firebaseUtils';
 import { uploadToCloudinary } from '@/lib/cloudinary';
+import {
+    AVAILABILITY_OPTIONS,
+    DEFAULT_SITE_OPTIONS,
+    formatINR,
+    normalizeProperty,
+    parsePriceToNumber,
+} from '@/lib/realEstate';
 
-const commercialAmenities = [
-    'Security (24/7)', 'CCTV', 'Intercom', 'Power Backup',
-    'Lift', 'Covered Parking', 'Visitor Parking', 'Conference Room',
-    'Cafeteria', 'Fire Safety', 'Server Room', 'UPS/Generator',
-    'High-Speed Internet', 'Reception/Lobby', 'Air Conditioning', 'Pantry',
-    'Loading Dock', 'Signage Rights', 'ATM', 'Metro Nearby'
-];
-
-const residentialAmenities = [
-    'Security (24/7)', 'CCTV', 'Intercom', 'Power Backup',
-    'Lift', 'Covered Parking', 'Visitor Parking', 'Swimming Pool', 
-    'Gym', 'Clubhouse', 'Children Play Area', 'Garden',
-    'Jogging Track', 'Tennis Court', 'Squash Court', 'Vaastu Compliant',
-    'Gas Pipeline', 'Pet Friendly', 'Servant Room'
-];
-
-const plotAmenities = [
-    'Boundary Wall', 'Gated Community', 'Security (24/7)', 'CCTV',
-    'Water Connection', 'Electricity Connection', 'Sewage System',
-    'Internal Roads', 'Street Lights', 'Park/Garden'
-];
-
-const subtypes = {
-    'Office Space': ['Bare Shell', 'Warm Shell', 'Fully Fitted', 'Co-Working', 'Managed Office'],
-    'Retail': ['High Street Shop', 'Mall Space', 'Showroom', 'Kiosk', 'Food Court'],
-    'Industrial': ['Warehouse', 'Factory', 'Cold Storage', 'Godown'],
-    'IT Park': ['Grade A', 'Grade B', 'SEZ', 'IT/ITES'],
-    'Residential': ['Apartment', 'Villa', 'Independent House', 'Builder Floor', 'Studio', 'Duplex', 'Penthouse', 'Farmhouse'],
-    'Plots & Lands': ['Agricultural', 'NA Plot', 'Commercial Land', 'Industrial Land', 'Residential Plot']
+const areaFactors = {
+    'sq.ft': 1,
+    'sq.m': 10.7639,
+    'sq.yd': 9,
+    acre: 43560,
+    hectare: 107639,
+    guntha: 1089,
 };
 
 export default function AddPropertyPage() {
@@ -43,139 +30,240 @@ export default function AddPropertyPage() {
     );
 }
 
+function emptyForm(options = DEFAULT_SITE_OPTIONS) {
+    return {
+        listingId: '',
+        listingType: 'Sell',
+        category: 'Commercial',
+        type: options.commercialTypes[0],
+        title: '',
+        bhk: '',
+        bedrooms: '',
+        bathrooms: '',
+        parking: '',
+        locality: '',
+        zone: '',
+        city: 'Pune',
+        carpetArea: '',
+        builtUpArea: '',
+        area: '',
+        areaUnit: 'sq.ft',
+        floor: '',
+        facing: '',
+        age: '',
+        furnishing: '',
+        possession: '',
+        availability: 'Available',
+        thumbnail: '',
+        images: [],
+        newImageUrl: '',
+        floorPlan: '',
+        videoUrl: '',
+        price: '',
+        priceLabel: '',
+        priceNegotiable: false,
+        cardBadge: 'Verified',
+        status: 'Published',
+        featured: false,
+        verified: true,
+        legalClear: true,
+        reraRegistered: true,
+        description: '',
+        neighborhood: '',
+        amenities: [],
+        tags: [],
+        newTag: '',
+        reraId: '',
+    };
+}
+
+function roundArea(value) {
+    const numeric = Number(value);
+    return numeric ? String(Math.round(numeric)) : '';
+}
+
+function convertArea(value, fromUnit, toUnit) {
+    const numeric = Number(value);
+    if (!numeric || !areaFactors[fromUnit] || !areaFactors[toUnit]) return value;
+    return roundArea((numeric * areaFactors[fromUnit]) / areaFactors[toUnit]);
+}
+
 function PropertyForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const editId = searchParams.get('id');
-
-    const [openSection, setOpenSection] = useState('basic');
+    const [step, setStep] = useState(1);
+    const [options, setOptions] = useState(DEFAULT_SITE_OPTIONS);
+    const [formData, setFormData] = useState(emptyForm(DEFAULT_SITE_OPTIONS));
     const [isSaving, setIsSaving] = useState(false);
-    const [isLoadingData, setIsLoadingData] = useState(!!editId);
+    const [isLoadingData, setIsLoadingData] = useState(Boolean(editId));
     const [imageFile, setImageFile] = useState(null);
+    const [error, setError] = useState('');
 
-    const [formData, setFormData] = useState({
-        name: '', type: 'Office Space', subtype: 'Bare Shell',
-        listingType: 'sale', statusRadio: 'active',
-        city: 'Pune', locality: '', address: '', mapsUrl: '', landmark: '',
-        priceMin: '', priceMax: '', priceSqft: '', negotiable: false, yieldPercent: '', maintenance: '',
-        superBuiltUp: '', carpetArea: '', bhk: '', bathrooms: '', balconies: '', floor: '', totalFloors: '',
-        facing: '', parking: 'none', furnishing: 'unfurnished', possession: '', constructionStatus: 'ready',
-        amenities: [],
-        featureImage: '', virtualTourUrl: '',
-        tags: '', nriFriendly: false, featured: false,
-        shortDescription: '', fullDescription: '', reraId: '',
-    });
+    useEffect(() => {
+        getSiteOptions().then((data) => {
+            setOptions(data);
+            setFormData((prev) => ({
+                ...prev,
+                type: prev.type || data.commercialTypes?.[0] || DEFAULT_SITE_OPTIONS.commercialTypes[0],
+            }));
+        }).catch(() => {});
+    }, []);
 
-    const update = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
-    const toggleAmenity = (a) => {
-        setFormData(prev => ({
+    useEffect(() => {
+        if (!editId) return;
+        getProperty(editId).then((data) => {
+            if (!data) return;
+            const p = normalizeProperty(data);
+            setFormData((prev) => ({
+                ...prev,
+                ...p,
+                title: p.title,
+                price: p.price || '',
+                priceLabel: p.priceLabel || '',
+                thumbnail: p.thumbnail || '',
+                images: p.images || [],
+                tags: p.tags || [],
+                amenities: p.amenities || [],
+                area: p.area || '',
+                carpetArea: p.carpetArea || '',
+                builtUpArea: p.builtUpArea || '',
+                videoUrl: p.videoUrl || '',
+                floorPlan: p.floorPlan || '',
+                newTag: '',
+                newImageUrl: '',
+            }));
+        }).catch(console.error).finally(() => setIsLoadingData(false));
+    }, [editId]);
+
+    const typeOptions = formData.category === 'Commercial' ? options.commercialTypes : options.residentialTypes;
+    const selectedZone = options.localityZones?.[formData.locality] || '';
+
+    const update = (field, value) => {
+        setFormData((prev) => {
+            const next = { ...prev, [field]: value };
+            if (field === 'category') {
+                next.type = value === 'Commercial' ? options.commercialTypes?.[0] : options.residentialTypes?.[0];
+            }
+            if (field === 'locality') {
+                next.zone = options.localityZones?.[value] || prev.zone;
+            }
+            if (field === 'carpetArea') {
+                next.builtUpArea = roundArea(Number(value) * 1.2);
+                next.area = roundArea(Number(value) * 1.35);
+            }
+            if (field === 'price') {
+                next.priceLabel = formatINR(parsePriceToNumber(value));
+            }
+            if (field === 'areaUnit') {
+                next.carpetArea = convertArea(prev.carpetArea, prev.areaUnit, value);
+                next.builtUpArea = convertArea(prev.builtUpArea, prev.areaUnit, value);
+                next.area = convertArea(prev.area, prev.areaUnit, value);
+            }
+            return next;
+        });
+    };
+
+    const toggleAmenity = (amenity) => {
+        setFormData((prev) => ({
             ...prev,
-            amenities: prev.amenities.includes(a) ? prev.amenities.filter(x => x !== a) : [...prev.amenities, a]
+            amenities: prev.amenities.includes(amenity)
+                ? prev.amenities.filter((item) => item !== amenity)
+                : [...prev.amenities, amenity],
         }));
     };
 
-    const isResidential = formData.type === 'Residential';
-    const isPlot = formData.type === 'Plots & Lands';
-    const isRent = formData.listingType === 'lease' || formData.listingType === 'pre_leased';
-    const priceLabel = isRent ? 'Rent' : 'Price';
-    const currentAmenities = isPlot ? plotAmenities : (isResidential ? residentialAmenities : commercialAmenities);
+    const addTag = () => {
+        const tag = formData.newTag.trim();
+        if (!tag || formData.tags.includes(tag)) return;
+        setFormData((prev) => ({ ...prev, tags: [...prev.tags, tag], newTag: '' }));
+    };
 
-    useEffect(() => {
-        if (editId) {
-            getProperty(editId).then(data => {
-                if (data) {
-                    setFormData(prev => ({
-                        ...prev, ...data,
-                        amenities: data.amenities || [],
-                        statusRadio: data.active ? 'active' : 'draft',
-                        featureImage: data.image || '',
-                        tags: data.tags ? data.tags.join(', ') : '',
-                    }));
-                }
-            }).catch(console.error).finally(() => setIsLoadingData(false));
+    const addImageUrl = () => {
+        const url = formData.newImageUrl.trim();
+        if (!url || formData.images.includes(url)) return;
+        setFormData((prev) => ({
+            ...prev,
+            thumbnail: prev.thumbnail || url,
+            images: [...prev.images, url],
+            newImageUrl: '',
+        }));
+    };
+
+    const validate = () => {
+        if (!formData.title.trim()) return 'Property title is required.';
+        if (!formData.locality.trim()) return 'Locality is required.';
+        if (!parsePriceToNumber(formData.price) && !formData.priceLabel.trim()) return 'Numeric price or price label is required.';
+        return '';
+    };
+
+    const handleSave = async (statusOverride = formData.status) => {
+        const validationError = validate();
+        if (validationError) {
+            setError(validationError);
+            return;
         }
-    }, [editId]);
 
-    const handleSave = async (isDraft) => {
         setIsSaving(true);
+        setError('');
         try {
-            let uploadedImageUrl = formData.featureImage;
-
-            // Upload image to Cloudinary if a new file was selected
+            let thumbnail = formData.thumbnail;
             if (imageFile) {
-                const downloadUrl = await uploadToCloudinary(imageFile);
-                if (downloadUrl) {
-                    uploadedImageUrl = downloadUrl;
-                }
+                thumbnail = await uploadToCloudinary(imageFile);
             }
-
-            const property = {
-                name: formData.name,
-                type: formData.type,
-                subtype: formData.subtype,
-                listingType: formData.listingType,
-                locality: formData.locality,
-                city: formData.city,
-                address: formData.address,
-                mapsUrl: formData.mapsUrl,
-                landmark: formData.landmark,
-                priceMin: formData.priceMin,
-                priceMax: formData.priceMax,
-                priceSqft: formData.priceSqft,
-                negotiable: formData.negotiable,
-                priceDisplay: formData.priceMin ? `₹${formData.priceMin}${formData.priceMax ? '–' + formData.priceMax : ''}` : '',
-                bhk: formData.bhk || 'Commercial',
-                sqft: formData.superBuiltUp || '0',
-                superBuiltUp: formData.superBuiltUp,
-                carpetArea: formData.carpetArea,
-                bathrooms: formData.bathrooms,
-                balconies: formData.balconies,
-                floor: formData.floor,
-                totalFloors: formData.totalFloors,
-                facing: formData.facing,
-                parking: formData.parking,
-                furnishing: formData.furnishing,
-                possession: formData.possession,
-                status: isDraft ? 'Draft' : formData.constructionStatus === 'ready' ? 'Ready to Move' : formData.constructionStatus === 'under' ? 'Under Construction' : 'New Launch',
-                constructionStatus: formData.constructionStatus,
-                yield: formData.yieldPercent || null,
-                yieldPercent: formData.yieldPercent,
-                maintenanceCharge: formData.maintenance,
-                image: uploadedImageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
-                amenities: formData.amenities,
-                tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
-                virtualTourUrl: formData.virtualTourUrl,
-                featured: formData.featured,
-                nriFriendly: formData.nriFriendly,
-                active: !isDraft,
-                shortDescription: formData.shortDescription,
-                fullDescription: formData.fullDescription,
-                reraId: formData.reraId || '',
+            const images = [...new Set([thumbnail, ...formData.images].filter(Boolean))];
+            const payload = {
+                ...formData,
+                title: formData.title.trim(),
+                name: formData.title.trim(),
+                zone: formData.zone || selectedZone,
+                thumbnail,
+                image: thumbnail,
+                images,
+                price: parsePriceToNumber(formData.price),
+                priceLabel: formData.priceLabel || formatINR(parsePriceToNumber(formData.price)),
+                priceDisplay: formData.priceLabel || formatINR(parsePriceToNumber(formData.price)),
+                status: statusOverride,
+                active: statusOverride === 'Published',
+                updatedAt: new Date().toISOString(),
             };
 
-            if (editId) {
-                await updateProperty(editId, property);
-            } else {
-                await addProperty(property);
-            }
+            if (editId) await updateProperty(editId, payload);
+            else await addProperty(payload);
             router.push('/admin/dashboard/properties');
-        } catch (error) {
-            console.error('Failed to save property:', error);
-            alert('Failed to save property. Please check console for details.');
+        } catch (saveError) {
+            console.error('Failed to save property:', saveError);
+            setError(saveError.message || 'Failed to save property. Check permissions and credentials.');
         } finally {
             setIsSaving(false);
         }
     };
 
-    const SectionHeader = ({ id, title }) => (
-        <button
-            onClick={() => setOpenSection(openSection === id ? '' : id)}
-            className="w-full text-left flex justify-between items-center py-4 border-b border-[#D9D0C0] font-serif text-xl text-[#1A1714] cursor-pointer"
-        >
-            {title}
-            <span className="text-[#C9A96E]">{openSection === id ? '−' : '+'}</span>
-        </button>
-    );
+    const steps = [
+        'Basic',
+        'Location',
+        'Profile',
+        'Photos',
+        'Pricing',
+        'Features',
+        'Legal',
+    ];
+
+    const reviewItems = useMemo(() => [
+        ['Title', formData.title],
+        ['Listing Type', formData.listingType],
+        ['Category', formData.category],
+        ['Type', formData.type],
+        ['Location', `${formData.locality || 'Locality'}, ${formData.city}`],
+        ['Zone', formData.zone || selectedZone || 'On Request'],
+        ['Price', formData.priceLabel || formData.price],
+        ['Area', formData.area ? `${formData.area} ${formData.areaUnit}` : 'On Request'],
+        ['Status', formData.status],
+        ['Availability', formData.availability],
+        ['Badge', formData.cardBadge],
+        ['Amenities', formData.amenities.join(', ') || 'None selected'],
+        ['Images', `${[formData.thumbnail, ...formData.images].filter(Boolean).length} image(s)`],
+    ], [formData, selectedZone]);
 
     if (isLoadingData) {
         return <div className="p-12 text-center text-[#7A7268]">Loading property details...</div>;
@@ -183,290 +271,303 @@ function PropertyForm() {
 
     return (
         <div>
-            <h2 className="font-serif text-2xl sm:text-3xl text-[#1A1714] mb-8">{editId ? 'Edit Property' : 'Add New Property'}</h2>
+            <div className="mb-8 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+                <div>
+                    <h2 className="font-serif text-2xl text-[#1A1714] sm:text-3xl">{editId ? 'Edit Property' : 'Add New Property'}</h2>
+                    <p className="mt-1 font-sans text-sm text-[#7A7268]">Seven-step listing workflow with reusable property data fields.</p>
+                </div>
+                <button onClick={() => router.push('/admin/dashboard/properties')} className="font-sans text-sm uppercase tracking-wider text-[#7A7268] hover:text-[#1A1714]">Cancel</button>
+            </div>
 
-            <div className="bg-white rounded shadow border border-[#D9D0C0] p-4 sm:p-8 max-w-4xl">
-                {/* SECTION 1: Basic Information */}
-                <SectionHeader id="basic" title="Basic Information" />
-                {openSection === 'basic' && (
-                    <div className="py-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div className="sm:col-span-2">
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Property Name *</label>
-                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.name} onChange={e => update('name', e.target.value)} required />
-                        </div>
+            <div className="mb-6 flex gap-2 overflow-x-auto rounded border border-[#D9D0C0] bg-white p-2 scrollbar-hide">
+                {steps.map((label, index) => {
+                    const stepNo = index + 1;
+                    return (
+                        <button
+                            key={label}
+                            onClick={() => setStep(stepNo)}
+                            className={`flex shrink-0 items-center gap-2 rounded px-4 py-2 font-sans text-xs uppercase tracking-wider ${step === stepNo ? 'bg-[#0D0B09] text-[#C9A96E]' : 'text-[#7A7268] hover:bg-[#F5F0E8]'}`}
+                        >
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full border border-current text-[10px]">{stepNo}</span>
+                            {label}
+                        </button>
+                    );
+                })}
+            </div>
+
+            <div className="max-w-5xl rounded border border-[#D9D0C0] bg-white p-4 shadow sm:p-8">
+                {error && <div className="mb-6 rounded border border-red-200 bg-red-50 p-3 font-sans text-sm text-red-700">{error}</div>}
+
+                {step === 1 && (
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                         <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Property Type</label>
-                            <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.type} onChange={e => {
-                                const newType = e.target.value;
-                                update('type', newType);
-                                update('subtype', subtypes[newType] ? subtypes[newType][0] : '');
-                            }}>
-                                {Object.keys(subtypes).map(t => <option key={t}>{t}</option>)}
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Listing Type</label>
+                            <select value={formData.listingType} onChange={(event) => update('listingType', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]">
+                                {(options.listingTypes || []).map((item) => <option key={item}>{item}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Sub-type</label>
-                            <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.subtype} onChange={e => update('subtype', e.target.value)}>
-                                {(subtypes[formData.type] || []).map(s => <option key={s}>{s}</option>)}
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Category</label>
+                            <select value={formData.category} onChange={(event) => update('category', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]">
+                                <option>Residential</option>
+                                <option>Commercial</option>
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Listing Type</label>
-                            <div className="flex gap-4 mt-2">
-                                {['sale', 'lease', 'pre_leased', 'nri_special'].map(lt => (
-                                    <label key={lt} className="flex items-center text-sm font-sans gap-2 cursor-pointer">
-                                        <input type="radio" name="listingType" checked={formData.listingType === lt} onChange={() => update('listingType', lt)} className="accent-[#C9A96E]" />
-                                        {lt.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Status</label>
-                            <div className="flex gap-4 mt-2">
-                                {['active', 'inactive', 'sold', 'draft'].map(s => (
-                                    <label key={s} className="flex items-center text-sm font-sans gap-2 cursor-pointer">
-                                        <input type="radio" name="statusRadio" checked={formData.statusRadio === s} onChange={() => update('statusRadio', s)} className="accent-[#C9A96E]" />
-                                        {s.charAt(0).toUpperCase() + s.slice(1)}
-                                    </label>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* SECTION 2: Location */}
-                <SectionHeader id="location" title="Location" />
-                {openSection === 'location' && (
-                    <div className="py-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">City</label>
-                            <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.city} onChange={e => update('city', e.target.value)}>
-                                {['Pune', 'Mumbai', 'Bangalore', 'Other'].map(c => <option key={c}>{c}</option>)}
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Sub-type</label>
+                            <select value={formData.type} onChange={(event) => update('type', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]">
+                                {typeOptions.map((item) => <option key={item}>{item}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Locality / Area</label>
-                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.locality} onChange={e => update('locality', e.target.value)} placeholder="e.g. Baner, Wakad" />
-                        </div>
-                        <div className="sm:col-span-2">
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Full Address</label>
-                            <textarea className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none resize-none" rows={2} value={formData.address} onChange={e => update('address', e.target.value)} />
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Property Title *</label>
+                            <input value={formData.title} onChange={(event) => update('title', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Google Maps URL</label>
-                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.mapsUrl} onChange={e => update('mapsUrl', e.target.value)} />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Landmark</label>
-                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.landmark} onChange={e => update('landmark', e.target.value)} />
-                        </div>
-                    </div>
-                )}
-
-                {/* SECTION 3: Pricing */}
-                <SectionHeader id="pricing" title="Pricing" />
-                {openSection === 'pricing' && (
-                    <div className="py-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Min {priceLabel}</label>
-                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.priceMin} onChange={e => update('priceMin', e.target.value)} placeholder="e.g. 1.2Cr" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Max {priceLabel}</label>
-                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.priceMax} onChange={e => update('priceMax', e.target.value)} placeholder="e.g. 2.8Cr" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">{priceLabel} per Sq.ft.</label>
-                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.priceSqft} onChange={e => update('priceSqft', e.target.value)} />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Expected Yield %</label>
-                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.yieldPercent} onChange={e => update('yieldPercent', e.target.value)} />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <input type="checkbox" checked={formData.negotiable} onChange={e => update('negotiable', e.target.checked)} className="accent-[#C9A96E]" />
-                            <label className="text-sm font-sans text-[#7A7268]">{priceLabel} Negotiable</label>
-                        </div>
-                    </div>
-                )}
-
-                {/* SECTION 4: Property Details */}
-                <SectionHeader id="details" title="Property Details" />
-                {openSection === 'details' && (
-                    <div className="py-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">{isPlot ? 'Plot Area (sqft)' : 'Super Built-Up Area (sqft)'}</label>
-                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.superBuiltUp} onChange={e => update('superBuiltUp', e.target.value)} />
-                        </div>
-                        {!isPlot && (
-                            <div>
-                                <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Carpet Area (sqft)</label>
-                                <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.carpetArea} onChange={e => update('carpetArea', e.target.value)} />
-                            </div>
-                        )}
-                        {!isPlot && (
-                            <div>
-                                <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">{isResidential ? 'BHK' : 'Space Configuration'}</label>
-                                <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.bhk} onChange={e => update('bhk', e.target.value)}>
-                                    <option value="">Select</option>
-                                    {isResidential 
-                                        ? ['1 RK', '1 BHK', '2 BHK', '3 BHK', '4 BHK', '4+ BHK', 'Studio'].map(b => <option key={b} value={b}>{b}</option>)
-                                        : ['Single Cabin', 'Open Plan', '2-4 Cabins', '5-10 Cabins', '10+ Cabins', 'Full Floor', 'Warm Shell', 'Bare Shell'].map(b => <option key={b} value={b}>{b}</option>)
-                                    }
-                                </select>
-                            </div>
-                        )}
-                        {!isPlot && (
-                            <div>
-                                <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">{isResidential ? 'Bathrooms' : 'Washrooms'}</label>
-                                <input type="number" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.bathrooms} onChange={e => update('bathrooms', e.target.value)} />
-                            </div>
-                        )}
-                        {isResidential && !isPlot && (
-                            <div>
-                                <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Balconies</label>
-                                <input type="number" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.balconies} onChange={e => update('balconies', e.target.value)} />
-                            </div>
-                        )}
-                        {!isPlot && (
-                            <div>
-                                <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Floor Number</label>
-                                <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.floor} onChange={e => update('floor', e.target.value)} />
-                            </div>
-                        )}
-                        {!isPlot && (
-                            <div>
-                                <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Total Floors</label>
-                                <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.totalFloors} onChange={e => update('totalFloors', e.target.value)} />
-                            </div>
-                        )}
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Facing</label>
-                            <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.facing} onChange={e => update('facing', e.target.value)}>
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">BHK</label>
+                            <select value={formData.bhk} onChange={(event) => update('bhk', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]">
                                 <option value="">Select</option>
-                                {['East', 'West', 'North', 'South', 'North-East', 'North-West', 'South-East', 'South-West'].map(f => <option key={f} value={f}>{f}</option>)}
+                                {(options.bhkOptions || []).map((item) => <option key={item} value={item}>{item} BHK</option>)}
                             </select>
                         </div>
-                        {!isPlot && (
-                            <div>
-                                <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Parking</label>
-                                <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.parking} onChange={e => update('parking', e.target.value)}>
-                                    {['none', 'covered', 'open'].map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
-                                </select>
-                            </div>
-                        )}
-                        {!isPlot && (
-                            <div>
-                                <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Furnishing</label>
-                                <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.furnishing} onChange={e => update('furnishing', e.target.value)}>
-                                    {['unfurnished', 'semi-furnished', 'fully-furnished'].map(f => <option key={f} value={f}>{f.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</option>)}
-                                </select>
-                            </div>
-                        )}
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Possession Date</label>
-                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.possession} onChange={e => update('possession', e.target.value)} placeholder="e.g. Dec 2025" />
+                        <div className="grid grid-cols-3 gap-3">
+                            {['bedrooms', 'bathrooms', 'parking'].map((field) => (
+                                <div key={field}>
+                                    <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">{field}</label>
+                                    <input value={formData[field]} onChange={(event) => update(field, event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
+                                </div>
+                            ))}
                         </div>
-                        {!isPlot && (
-                            <div>
-                                <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Construction Status</label>
-                                <select className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.constructionStatus} onChange={e => update('constructionStatus', e.target.value)}>
-                                    <option value="ready">Ready to Move</option>
-                                    <option value="under">Under Construction</option>
-                                    <option value="new">New Launch</option>
-                                </select>
-                            </div>
-                        )}
                     </div>
                 )}
 
-                {/* SECTION 5: Amenities */}
-                <SectionHeader id="amenities" title="Amenities" />
-                {openSection === 'amenities' && (
-                    <div className="py-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                        {currentAmenities.map(a => (
-                            <label key={a} className="flex items-center gap-2 text-sm font-sans text-[#7A7268] cursor-pointer">
-                                <input type="checkbox" checked={formData.amenities.includes(a)} onChange={() => toggleAmenity(a)} className="accent-[#C9A96E]" />
-                                {a}
+                {step === 2 && (
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                        <div>
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Locality *</label>
+                            <input value={formData.locality} onChange={(event) => update('locality', event.target.value)} list="admin-localities" className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
+                            <datalist id="admin-localities">
+                                {(options.localities || []).map((item) => <option key={item} value={item} />)}
+                            </datalist>
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Zone</label>
+                            <input value={formData.zone || selectedZone} onChange={(event) => update('zone', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">City</label>
+                            <input value={formData.city} onChange={(event) => update('city', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Neighborhood / Landmark</label>
+                            <input value={formData.neighborhood} onChange={(event) => update('neighborhood', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
+                        </div>
+                    </div>
+                )}
+
+                {step === 3 && (
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                        <div>
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Carpet Area</label>
+                            <input value={formData.carpetArea} onChange={(event) => update('carpetArea', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Built-up Area</label>
+                            <input value={formData.builtUpArea} onChange={(event) => update('builtUpArea', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Super Built-up / Plot Area</label>
+                            <input value={formData.area} onChange={(event) => update('area', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Area Unit</label>
+                            <select value={formData.areaUnit} onChange={(event) => update('areaUnit', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]">
+                                {(options.areaUnits || []).map((item) => <option key={item}>{item}</option>)}
+                            </select>
+                        </div>
+                        {[
+                            ['floor', 'Floor'],
+                            ['facing', 'Facing'],
+                            ['age', 'Age'],
+                            ['furnishing', 'Furnishing'],
+                            ['possession', 'Possession'],
+                            ['availability', 'Availability'],
+                        ].map(([field, label]) => (
+                            <div key={field}>
+                                <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">{label}</label>
+                                {field === 'availability' ? (
+                                    <select value={formData.availability} onChange={(event) => update(field, event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]">
+                                        {AVAILABILITY_OPTIONS.map((item) => <option key={item}>{item}</option>)}
+                                    </select>
+                                ) : field === 'facing' ? (
+                                    <select value={formData.facing} onChange={(event) => update(field, event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]">
+                                        <option value="">Select</option>
+                                        {(options.facingOptions || []).map((item) => <option key={item}>{item}</option>)}
+                                    </select>
+                                ) : field === 'furnishing' ? (
+                                    <select value={formData.furnishing} onChange={(event) => update(field, event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]">
+                                        <option value="">Select</option>
+                                        {(options.furnishingOptions || []).map((item) => <option key={item}>{item}</option>)}
+                                    </select>
+                                ) : (
+                                    <input value={formData[field]} onChange={(event) => update(field, event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {step === 4 && (
+                    <div className="space-y-6">
+                        <div>
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Thumbnail / Main Image Upload</label>
+                            <input type="file" accept="image/*" onChange={(event) => setImageFile(event.target.files?.[0] || null)} className="w-full rounded border border-[#D9D0C0] p-2.5 text-sm outline-none focus:border-[#C9A96E]" />
+                            {imageFile && <p className="mt-1 text-xs text-green-700">Selected: {imageFile.name}</p>}
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Thumbnail URL</label>
+                            <input value={formData.thumbnail} onChange={(event) => update('thumbnail', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
+                        </div>
+                        <div className="flex gap-3">
+                            <input value={formData.newImageUrl} onChange={(event) => update('newImageUrl', event.target.value)} placeholder="Paste gallery image URL" className="flex-1 rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
+                            <button onClick={addImageUrl} className="flex items-center rounded bg-[#0D0B09] px-4 py-2 text-sm text-[#C9A96E]"><ImagePlus className="mr-2 h-4 w-4" /> Add</button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                            {[formData.thumbnail, ...formData.images].filter(Boolean).map((image, index) => (
+                                <div key={`${image}-${index}`} className="relative aspect-[4/3] overflow-hidden rounded border border-[#D9D0C0]">
+                                    <img src={image} alt="" className="h-full w-full object-cover" />
+                                    {index > 0 && (
+                                        <button onClick={() => setFormData((prev) => ({ ...prev, images: prev.images.filter((item) => item !== image) }))} className="absolute right-2 top-2 rounded-full bg-[#0D0B09]/80 p-1 text-white">
+                                            <Trash2 className="h-3 w-3" />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                            <div>
+                                <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Floor Plan URL</label>
+                                <input value={formData.floorPlan} onChange={(event) => update('floorPlan', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
+                            </div>
+                            <div>
+                                <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Video URL</label>
+                                <input value={formData.videoUrl} onChange={(event) => update('videoUrl', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {step === 5 && (
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                        <div>
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Numeric Price *</label>
+                            <input value={formData.price} onChange={(event) => update('price', event.target.value)} placeholder="e.g. 12000000 or 1.2Cr" className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Price Label</label>
+                            <input value={formData.priceLabel} onChange={(event) => update('priceLabel', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Card Badge</label>
+                            <select value={formData.cardBadge} onChange={(event) => update('cardBadge', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]">
+                                {(options.cardBadgeOptions || []).map((item) => <option key={item}>{item}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Listing Status</label>
+                            <select value={formData.status} onChange={(event) => update('status', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]">
+                                {['Draft', 'Published', 'Archived'].map((item) => <option key={item}>{item}</option>)}
+                            </select>
+                        </div>
+                        {[
+                            ['priceNegotiable', 'Price Negotiable'],
+                            ['featured', 'Featured'],
+                            ['verified', 'Verified'],
+                            ['legalClear', 'Legal Clear'],
+                            ['reraRegistered', 'License/RERA Registered'],
+                        ].map(([field, label]) => (
+                            <label key={field} className="flex items-center gap-3 rounded border border-[#D9D0C0] p-3 text-sm text-[#1A1714]">
+                                <input type="checkbox" checked={Boolean(formData[field])} onChange={(event) => update(field, event.target.checked)} className="accent-[#C9A96E]" />
+                                {label}
                             </label>
                         ))}
                     </div>
                 )}
 
-                {/* SECTION 6: Media */}
-                <SectionHeader id="media" title="Media" />
-                {openSection === 'media' && (
-                    <div className="py-6 grid grid-cols-1 gap-6">
+                {step === 6 && (
+                    <div className="space-y-6">
                         <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Feature Image (Upload)</label>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                className="w-full border border-[#D9D0C0] p-2 rounded focus:border-[#C9A96E] outline-none text-sm"
-                                onChange={e => {
-                                    if (e.target.files[0]) {
-                                        setImageFile(e.target.files[0]);
-                                    }
-                                }}
-                            />
-                            {imageFile && <p className="text-xs text-green-600 mt-1">Image selected: {imageFile.name}</p>}
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Full Description</label>
+                            <textarea value={formData.description} onChange={(event) => update('description', event.target.value)} rows={6} className="w-full resize-y rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Or Image URL</label>
-                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.featureImage} onChange={e => update('featureImage', e.target.value)} placeholder="Only used if no file is uploaded" />
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Neighborhood Description</label>
+                            <textarea value={formData.neighborhood} onChange={(event) => update('neighborhood', event.target.value)} rows={3} className="w-full resize-y rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
                         </div>
-                        <div className="sm:col-span-2">
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Virtual Tour URL</label>
-                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.virtualTourUrl} onChange={e => update('virtualTourUrl', e.target.value)} placeholder="YouTube / Matterport" />
+                        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                            {(options.amenities || []).map((amenity) => (
+                                <label key={amenity} className="flex items-center gap-2 rounded border border-[#D9D0C0] p-2 text-sm text-[#7A7268]">
+                                    <input type="checkbox" checked={formData.amenities.includes(amenity)} onChange={() => toggleAmenity(amenity)} className="accent-[#C9A96E]" />
+                                    {amenity}
+                                </label>
+                            ))}
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Tags</label>
+                            <div className="mb-3 flex gap-3">
+                                <input value={formData.newTag} onChange={(event) => update('newTag', event.target.value)} onKeyDown={(event) => event.key === 'Enter' && (event.preventDefault(), addTag())} className="flex-1 rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
+                                <button onClick={addTag} className="flex items-center rounded bg-[#0D0B09] px-4 py-2 text-sm text-[#C9A96E]"><Plus className="mr-2 h-4 w-4" /> Add</button>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {formData.tags.map((tag) => (
+                                    <button key={tag} onClick={() => setFormData((prev) => ({ ...prev, tags: prev.tags.filter((item) => item !== tag) }))} className="rounded-full border border-[#D9D0C0] px-3 py-1 text-xs text-[#7A7268]">
+                                        {tag} x
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}
 
-                {/* SECTION 7: Tags & SEO */}
-                <SectionHeader id="seo" title="Tags & SEO" />
-                {openSection === 'seo' && (
-                    <div className="py-6 grid grid-cols-1 gap-6">
+                {step === 7 && (
+                    <div className="space-y-6">
                         <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Tags (comma separated)</label>
-                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.tags} onChange={e => update('tags', e.target.value)} placeholder="high-yield, IT corridor, road-facing" />
+                            <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">License / RERA / Project Registration ID</label>
+                            <input value={formData.reraId} onChange={(event) => update('reraId', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
                         </div>
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">RERA Registration ID</label>
-                            <input type="text" className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none" value={formData.reraId} onChange={e => update('reraId', e.target.value)} placeholder="e.g. P52100093929" />
+                        <div className="rounded border border-[#D9D0C0] bg-[#F5F0E8]/50">
+                            {reviewItems.map(([label, value]) => (
+                                <div key={label} className="flex justify-between gap-4 border-b border-[#D9D0C0] p-4 last:border-b-0">
+                                    <span className="font-sans text-sm text-[#7A7268]">{label}</span>
+                                    <span className="max-w-[60%] text-right font-sans text-sm font-medium text-[#1A1714]">{value || 'On Request'}</span>
+                                </div>
+                            ))}
                         </div>
-                        <div className="flex gap-6">
-                            <label className="flex items-center gap-2 text-sm font-sans cursor-pointer">
-                                <input type="checkbox" checked={formData.nriFriendly} onChange={e => update('nriFriendly', e.target.checked)} className="accent-[#C9A96E]" />
-                                NRI Friendly
-                            </label>
-                            <label className="flex items-center gap-2 text-sm font-sans cursor-pointer">
-                                <input type="checkbox" checked={formData.featured} onChange={e => update('featured', e.target.checked)} className="accent-[#C9A96E]" />
-                                Featured Listing
-                            </label>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Short Description (150 chars)</label>
-                            <textarea className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none resize-none" rows={2} maxLength={150} value={formData.shortDescription} onChange={e => update('shortDescription', e.target.value)} />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-[#7A7268] uppercase mb-1">Full Description</label>
-                            <textarea className="w-full border border-[#D9D0C0] p-2.5 rounded focus:border-[#C9A96E] outline-none resize-none" rows={6} value={formData.fullDescription} onChange={e => update('fullDescription', e.target.value)} />
+                        <div className="rounded border border-[#C9A96E]/40 bg-[#C9A96E]/10 p-4 text-sm leading-relaxed text-[#7A7268]">
+                            <Check className="mb-2 h-5 w-5 text-[#C9A96E]" />
+                            Confirm listing IDs, RERA details, availability, images, price, and enum values before publishing. Public pages show only Published properties.
                         </div>
                     </div>
                 )}
 
-                {/* Actions */}
-                <div className="flex flex-wrap gap-4 pt-8 border-t border-[#D9D0C0] mt-6">
-                    <button onClick={() => handleSave(true)} disabled={isSaving} className="px-6 py-2.5 border border-[#7A7268] text-[#7A7268] rounded text-sm uppercase tracking-wider cursor-pointer hover:border-[#C9A96E] transition-colors disabled:opacity-50">
-                        {isSaving ? 'Saving...' : 'Save as Draft'}
-                    </button>
-                    <button onClick={() => handleSave(false)} disabled={isSaving} className="px-6 py-2.5 bg-[#C9A96E] text-[#0D0B09] rounded text-sm uppercase tracking-wider cursor-pointer hover:bg-[#F5F0E8] transition-colors disabled:opacity-50">
-                        {isSaving ? 'Publishing...' : (editId ? 'Update Listing' : 'Publish Listing')}
-                    </button>
-                    <button onClick={() => router.push('/admin/dashboard/properties')} disabled={isSaving} className="px-6 py-2.5 text-[#7A7268] text-sm uppercase tracking-wider cursor-pointer hover:text-[#1A1714] transition-colors disabled:opacity-50">
-                        Cancel
-                    </button>
+                <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-[#D9D0C0] pt-6">
+                    <div className="flex gap-3">
+                        <button onClick={() => setStep((value) => Math.max(1, value - 1))} disabled={step === 1} className="rounded border border-[#D9D0C0] px-5 py-2.5 font-sans text-sm text-[#7A7268] disabled:opacity-40">
+                            Previous
+                        </button>
+                        <button onClick={() => setStep((value) => Math.min(7, value + 1))} disabled={step === 7} className="rounded border border-[#D9D0C0] px-5 py-2.5 font-sans text-sm text-[#7A7268] disabled:opacity-40">
+                            Next
+                        </button>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                        <button onClick={() => handleSave('Draft')} disabled={isSaving} className="rounded border border-[#7A7268] px-6 py-2.5 font-sans text-sm uppercase tracking-wider text-[#7A7268] hover:border-[#C9A96E] disabled:opacity-50">
+                            Save Draft
+                        </button>
+                        <button onClick={() => handleSave('Published')} disabled={isSaving} className="flex items-center rounded bg-[#C9A96E] px-6 py-2.5 font-sans text-sm uppercase tracking-wider text-[#0D0B09] hover:bg-[#F5F0E8] disabled:opacity-50">
+                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {editId ? 'Update Listing' : 'Publish Listing'}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

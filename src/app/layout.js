@@ -1,18 +1,54 @@
 import "./globals.css";
+import AnalyticsScripts from "@/components/AnalyticsScripts";
 import Providers from "@/components/Providers";
+import StructuredData from "@/components/StructuredData";
+import { BUSINESS } from "@/lib/config";
+import { getContentSettings } from "@/lib/firebaseUtils";
+import { DEFAULT_CONTENT_SETTINGS } from "@/lib/realEstate";
 
-export const metadata = {
-  title: "Aurevon Realty — Premium Real Estate in Pune | 25+ Years Experience",
-  description: "Aurevon Realty Pvt. Ltd. — Pune's most trusted real estate partner since 2001. Premium homes, office spaces, retail shops & investments. NRI advisory. RERA registered. 1,000+ deals closed.",
-  keywords: "real estate Pune, luxury homes Pune, commercial property Pune, office space Pune, retail shop Pune, NRI investment India, RERA registered broker",
-  openGraph: {
-    title: "Aurevon Realty — Where Vision Meets Reality",
-    description: "25 years of curating exceptional properties across India.",
-    type: "website",
-  },
-};
+export async function generateMetadata() {
+  const settings = await getContentSettings().catch(() => DEFAULT_CONTENT_SETTINGS);
+  const baseUrl = settings.websiteBaseUrl || BUSINESS.websiteBaseUrl;
+  const title = settings.seoTitle || DEFAULT_CONTENT_SETTINGS.seoTitle;
+  const description = settings.seoDesc || DEFAULT_CONTENT_SETTINGS.seoDesc;
+  const image = settings.heroImage || DEFAULT_CONTENT_SETTINGS.heroImage;
+
+  return {
+    metadataBase: new URL(baseUrl),
+    title: {
+      default: title,
+      template: "%s | Aurevon Realty",
+    },
+    description,
+    keywords: settings.seoKeywords || DEFAULT_CONTENT_SETTINGS.seoKeywords,
+    alternates: {
+      canonical: "/",
+    },
+    openGraph: {
+      title,
+      description,
+      url: baseUrl,
+      siteName: BUSINESS.businessName,
+      images: [image],
+      locale: "en_IN",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+  };
+}
 
 export default function RootLayout({ children }) {
+  const gtmId = process.env.NEXT_PUBLIC_GTM_ID;
+
   return (
     <html lang="en">
       <head>
@@ -21,9 +57,22 @@ export default function RootLayout({ children }) {
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
       </head>
       <body>
+        {gtmId && (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+              height="0"
+              width="0"
+              style={{ display: "none", visibility: "hidden" }}
+              title="Google Tag Manager"
+            />
+          </noscript>
+        )}
         <Providers>
           {children}
         </Providers>
+        <StructuredData />
+        <AnalyticsScripts />
       </body>
     </html>
   );

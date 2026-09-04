@@ -1,0 +1,114 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdminEmail() {
+      return signedIn()
+        && request.auth.token.email in [
+          "arundongare150@gmail.com",
+          "info@aurevonrealty.in"
+        ];
+    }
+
+    function isAdmin() {
+      return isAdminEmail()
+        || (
+          signedIn()
+          && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
+        );
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isPublished() {
+      return resource.data.status == "Published" && resource.data.active == true;
+    }
+
+    match /properties/{propertyId} {
+      allow read: if isAdmin() || isPublished();
+      allow create: if isAdmin()
+        || (
+          signedIn()
+          && request.resource.data.submittedBy == request.auth.token.email
+          && request.resource.data.active == false
+        );
+      allow update, delete: if isAdmin();
+    }
+
+    match /articles/{articleId} {
+      allow read: if isAdmin() || resource.data.status == "Published";
+      allow write: if isAdmin();
+    }
+
+    match /content/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /testimonials/{testimonialId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /faqs/{faqId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /leads/{leadId} {
+      allow create: if request.resource.data.name is string
+        && request.resource.data.phone is string
+        && request.resource.data.status == "New";
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /enquiries/{leadId} {
+      allow create: if request.resource.data.name is string
+        && request.resource.data.phone is string;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /whatsapp_clicks/{clickId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId)
+        && (!("role" in request.resource.data) || request.resource.data.role == "user");
+      allow update: if (
+          isOwner(userId)
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(["role"])
+        )
+        || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /blogs/{blogId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,190 +1,237 @@
 'use client';
-import { useState } from 'react';
-import { ChevronDown, MessageCircle, CheckCircle2 } from 'lucide-react';
-import { SITE_CONFIG } from '@/lib/config';
-import { addEnquiry } from '@/lib/firebaseUtils';
 
-export default function Contact() {
+import { useEffect, useState } from 'react';
+import { CheckCircle2, ChevronDown, Mail, MessageCircle, Phone } from 'lucide-react';
+import { addLead, getContentSettings } from '@/lib/firebaseUtils';
+import {
+    DEFAULT_CONTENT_SETTINGS,
+    createWhatsAppUrl,
+    getPrimaryWhatsapp,
+    sanitizePhone,
+    trackConversion,
+} from '@/lib/realEstate';
+
+const defaultMapEmbedUrl = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3782.548890837658!2d73.76493!3d18.57244!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc2b900bfcab5e1%3A0xe6a29f92a7ee8e44!2sAurevon%20Realty!5e0!3m2!1sen!2sin!4v1708416000000!5m2!1sen!2sin';
+
+export default function Contact({ standalone = false }) {
+    const [settings, setSettings] = useState(DEFAULT_CONTENT_SETTINGS);
     const [formData, setFormData] = useState({
-        name: '', email: '', phone: '',
-        enquiryType: '', city: '', budget: '', message: ''
+        name: '',
+        email: '',
+        phone: '',
+        subject: '',
+        message: '',
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState('');
 
-    const update = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+    useEffect(() => {
+        getContentSettings().then(setSettings).catch(() => {});
+    }, []);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const update = (field, value) => setFormData((prev) => ({ ...prev, [field]: value }));
+
+    const resetForm = () => {
+        setSubmitted(false);
+        setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
+        setError('');
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        const phoneDigits = sanitizePhone(formData.phone);
+        const validEmail = !formData.email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
+
+        if (!formData.name.trim() || phoneDigits.length < 8 || !formData.message.trim()) {
+            setError('Please enter your name, phone number, and message.');
+            return;
+        }
+        if (!validEmail) {
+            setError('Please enter a valid email address or leave it blank.');
+            return;
+        }
+
+        const lastSubmitted = Number(localStorage.getItem('aurevon_contact_submit_at') || 0);
+        if (Date.now() - lastSubmitted < 120000) {
+            setError('Your message was recently sent. Please wait a moment before sending again.');
+            return;
+        }
+
         setIsSubmitting(true);
         setError('');
         try {
-            await addEnquiry({
-                ...formData,
+            await addLead({
+                name: formData.name.trim(),
+                email: formData.email.trim(),
+                phone: formData.phone.trim(),
+                subject: formData.subject.trim(),
+                message: formData.message.trim(),
+                propertyId: '',
+                propertyTitle: 'General Enquiry',
+                source: standalone ? 'Contact Page' : 'Homepage Contact Section',
+                requestType: 'General Enquiry',
                 status: 'New',
-                source: 'contact_form',
             });
+            localStorage.setItem('aurevon_contact_submit_at', String(Date.now()));
+            trackConversion('contact_lead_submitted', { source: standalone ? 'Contact Page' : 'Homepage Contact Section' });
             setSubmitted(true);
         } catch (err) {
-            console.error('Failed to save enquiry:', err);
+            console.error('Failed to save lead:', err);
             setError('Failed to send enquiry. Please try WhatsApp or call directly.');
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    return (
-        <section id="contact" className="py-24 bg-[#0D0B09] border-t border-[#2E2A25]">
-            <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16">
-                <div>
-                    <h2 className="font-serif text-5xl md:text-6xl text-[#F5F0E8] mb-12">Let&apos;s Find Your Space</h2>
+    const whatsapp = getPrimaryWhatsapp(settings);
 
-                    <div className="font-sans text-[#F5F0E8] space-y-2 mb-12 text-sm leading-relaxed">
-                        <p className="font-bold text-lg text-[#C9A96E] mb-4">AUREVON REALTY PVT. LTD.</p>
-                        <p>Pune, Maharashtra, India</p>
+    return (
+        <section id="contact" className={`${standalone ? 'pt-36' : 'py-24'} border-t border-[#2E2A25] bg-[#0D0B09]`}>
+            <div className="mx-auto grid max-w-7xl grid-cols-1 gap-16 px-6 lg:grid-cols-2">
+                <div>
+                    <h2 className="mb-12 font-serif text-5xl text-[#F5F0E8] md:text-6xl">Let&apos;s Find Your Space</h2>
+
+                    <div className="mb-12 space-y-3 font-sans text-sm leading-relaxed text-[#F5F0E8]">
+                        <p className="mb-4 text-lg font-bold text-[#C9A96E]">AUREVON REALTY PVT. LTD.</p>
+                        <p>{settings.contactAddress || DEFAULT_CONTENT_SETTINGS.contactAddress}</p>
                         <p className="mt-6 flex items-center">
-                            <svg className="w-4 h-4 mr-3 text-[#C9A96E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                            </svg>
-                            {SITE_CONFIG.ADMIN_EMAIL}
-                        </p>
-                        <p className="flex items-center">
-                            <MessageCircle className="w-4 h-4 mr-3 text-[#C9A96E]" />
-                            <a href={`https://wa.me/${SITE_CONFIG.ARUN_WHATSAPP}`} target="_blank" rel="noreferrer" className="hover:text-[#C9A96E] transition-colors">
-                                WhatsApp: +91 8180993030
+                            <Mail className="mr-3 h-4 w-4 text-[#C9A96E]" />
+                            <a href={`mailto:${settings.contactEmail}`} className="transition-colors hover:text-[#C9A96E]">
+                                {settings.contactEmail}
                             </a>
                         </p>
                         <p className="flex items-center">
-                            <svg className="w-4 h-4 mr-3 text-[#C9A96E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                            </svg>
-                            <a href="tel:+919767446655" className="hover:text-[#C9A96E] transition-colors">+91 9767 446 655</a>
+                            <MessageCircle className="mr-3 h-4 w-4 text-[#C9A96E]" />
+                            <a href={createWhatsAppUrl({ phone: whatsapp, message: 'I would like to schedule a consultation with Aurevon Realty.' })} target="_blank" rel="noreferrer" className="transition-colors hover:text-[#C9A96E]">
+                                WhatsApp: +{whatsapp}
+                            </a>
+                        </p>
+                        <p className="flex items-center">
+                            <Phone className="mr-3 h-4 w-4 text-[#C9A96E]" />
+                            <a href={`tel:${String(settings.contactPhone).replace(/\s/g, '')}`} className="transition-colors hover:text-[#C9A96E]">{settings.contactPhone}</a>
+                        </p>
+                        <p className="pt-4 font-sans text-xs uppercase tracking-wider text-[#C9A96E]">
+                            License: {settings.contactRera || DEFAULT_CONTENT_SETTINGS.contactRera}
                         </p>
                     </div>
 
-                    {/* Google Maps Embed */}
-                    <div className="w-full h-64 rounded overflow-hidden border border-[#2E2A25]">
+                    <div className="h-64 w-full overflow-hidden rounded border border-[#2E2A25]">
                         <iframe
-                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3782.548890837658!2d73.76493!3d18.57244!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc2b900bfcab5e1%3A0xe6a29f92a7ee8e44!2sAurevon%20Realty!5e0!3m2!1sen!2sin!4v1708416000000!5m2!1sen!2sin"
-                            width="100%" height="100%"
+                            src={settings.mapEmbedUrl || defaultMapEmbedUrl}
+                            width="100%"
+                            height="100%"
                             style={{ border: 0, filter: 'grayscale(80%) invert(92%) contrast(83%)' }}
-                            allowFullScreen="" loading="lazy"
+                            allowFullScreen=""
+                            loading="lazy"
                             referrerPolicy="no-referrer-when-downgrade"
                             title="Aurevon Realty Location"
                         />
                     </div>
                 </div>
 
-                <div className="bg-[#1A1714] p-8 md:p-12 rounded border border-[#2E2A25]">
+                <div className="rounded border border-[#2E2A25] bg-[#1A1714] p-8 md:p-12">
                     {submitted ? (
-                        <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                            <CheckCircle2 className="w-16 h-16 text-[#C9A96E] mb-6" />
-                            <h3 className="font-serif text-3xl text-[#F5F0E8] mb-3">Enquiry Received!</h3>
-                            <p className="text-[#7A7268] font-sans text-sm leading-relaxed max-w-xs">
-                                Thank you for reaching out. Arun will personally get back to you within 24 hours.
+                        <div className="flex h-full flex-col items-center justify-center py-12 text-center">
+                            <CheckCircle2 className="mb-6 h-16 w-16 text-[#C9A96E]" />
+                            <h3 className="mb-3 font-serif text-3xl text-[#F5F0E8]">Message Sent</h3>
+                            <p className="max-w-xs font-sans text-sm leading-relaxed text-[#7A7268]">
+                                Thank you for reaching out. The advisory team will get back to you shortly.
                             </p>
                             <button
-                                onClick={() => { setSubmitted(false); setFormData({ name: '', email: '', phone: '', enquiryType: '', city: '', budget: '', message: '' }); }}
-                                className="mt-8 text-[#C9A96E] text-sm font-sans uppercase tracking-wider hover:text-[#F5F0E8] transition-colors"
+                                onClick={resetForm}
+                                className="mt-8 font-sans text-sm uppercase tracking-wider text-[#C9A96E] transition-colors hover:text-[#F5F0E8]"
                             >
-                                Submit Another Enquiry
+                                Send Another Message
                             </button>
                         </div>
                     ) : (
                         <form className="space-y-8" onSubmit={handleSubmit}>
                             {error && (
-                                <div className="bg-red-900/30 border border-red-700 text-red-300 p-3 rounded text-sm font-sans">
+                                <div className="rounded border border-red-700 bg-red-900/30 p-3 font-sans text-sm text-red-300">
                                     {error}
                                 </div>
                             )}
 
-                            {/* Full Name */}
                             <div className="relative group">
-                                <input type="text" id="name" required
-                                    className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] transition-colors peer placeholder-transparent"
+                                <input
+                                    type="text"
+                                    id="name"
+                                    required
+                                    className="peer w-full border-b border-[#2E2A25] bg-transparent py-2 font-sans text-[#F5F0E8] outline-none transition-colors placeholder-transparent focus:border-[#C9A96E]"
                                     placeholder="Full Name"
-                                    value={formData.name} onChange={e => update('name', e.target.value)}
+                                    value={formData.name}
+                                    onChange={(event) => update('name', event.target.value)}
                                 />
-                                <label htmlFor="name" className="absolute left-0 -top-4 text-xs font-sans text-[#7A7268] transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-2 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#C9A96E]">Full Name</label>
+                                <label htmlFor="name" className="absolute -top-4 left-0 font-sans text-xs text-[#7A7268] transition-all peer-placeholder-shown:top-2 peer-placeholder-shown:text-base peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#C9A96E]">Full Name</label>
                             </div>
 
-                            {/* Email & Phone */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                                 <div className="relative group">
-                                    <input type="email" id="email" required
-                                        className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] transition-colors peer placeholder-transparent"
+                                    <input
+                                        type="email"
+                                        id="email"
+                                        className="peer w-full border-b border-[#2E2A25] bg-transparent py-2 font-sans text-[#F5F0E8] outline-none transition-colors placeholder-transparent focus:border-[#C9A96E]"
                                         placeholder="Email"
-                                        value={formData.email} onChange={e => update('email', e.target.value)}
+                                        value={formData.email}
+                                        onChange={(event) => update('email', event.target.value)}
                                     />
-                                    <label htmlFor="email" className="absolute left-0 -top-4 text-xs font-sans text-[#7A7268] transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-2 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#C9A96E]">Email Address</label>
+                                    <label htmlFor="email" className="absolute -top-4 left-0 font-sans text-xs text-[#7A7268] transition-all peer-placeholder-shown:top-2 peer-placeholder-shown:text-base peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#C9A96E]">Email Address</label>
                                 </div>
                                 <div className="relative group">
-                                    <input type="tel" id="phone" required
-                                        className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] transition-colors peer placeholder-transparent"
+                                    <input
+                                        type="tel"
+                                        id="phone"
+                                        required
+                                        className="peer w-full border-b border-[#2E2A25] bg-transparent py-2 font-sans text-[#F5F0E8] outline-none transition-colors placeholder-transparent focus:border-[#C9A96E]"
                                         placeholder="Phone"
-                                        value={formData.phone} onChange={e => update('phone', e.target.value)}
+                                        value={formData.phone}
+                                        onChange={(event) => update('phone', event.target.value)}
                                     />
-                                    <label htmlFor="phone" className="absolute left-0 -top-4 text-xs font-sans text-[#7A7268] transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-2 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#C9A96E]">Phone / WhatsApp</label>
+                                    <label htmlFor="phone" className="absolute -top-4 left-0 font-sans text-xs text-[#7A7268] transition-all peer-placeholder-shown:top-2 peer-placeholder-shown:text-base peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#C9A96E]">Phone / WhatsApp</label>
                                 </div>
                             </div>
 
-                            {/* Enquiry Type */}
                             <div className="relative">
-                                <label htmlFor="enquiry-type" className="sr-only">Enquiry Type</label>
-                                <select id="enquiry-type" value={formData.enquiryType} onChange={e => update('enquiryType', e.target.value)}
-                                    className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] appearance-none">
-                                    <option value="" disabled className="bg-[#1A1714]">Enquiry Type</option>
-                                    <option value="office" className="bg-[#1A1714]">Office Space</option>
-                                    <option value="retail" className="bg-[#1A1714]">Retail / Shop</option>
-                                    <option value="preleased" className="bg-[#1A1714]">Pre-Leased Investment</option>
-                                    <option value="nri" className="bg-[#1A1714]">NRI Commercial Advisory</option>
-                                    <option value="other" className="bg-[#1A1714]">Other</option>
+                                <label htmlFor="subject" className="sr-only">Subject</label>
+                                <select
+                                    id="subject"
+                                    value={formData.subject}
+                                    onChange={(event) => update('subject', event.target.value)}
+                                    className="w-full appearance-none border-b border-[#2E2A25] bg-transparent py-2 font-sans text-[#F5F0E8] outline-none focus:border-[#C9A96E]"
+                                >
+                                    <option value="" className="bg-[#1A1714]">Subject</option>
+                                    <option value="Buying Property" className="bg-[#1A1714]">Buying Property</option>
+                                    <option value="Renting or Leasing" className="bg-[#1A1714]">Renting or Leasing</option>
+                                    <option value="Selling Property" className="bg-[#1A1714]">Selling Property</option>
+                                    <option value="NRI Advisory" className="bg-[#1A1714]">NRI Advisory</option>
+                                    <option value="Documentation" className="bg-[#1A1714]">Documentation</option>
                                 </select>
-                                <ChevronDown className="absolute right-0 top-3 w-4 h-4 text-[#7A7268] pointer-events-none" />
+                                <ChevronDown className="pointer-events-none absolute right-0 top-3 h-4 w-4 text-[#7A7268]" />
                             </div>
 
-                            {/* City of Interest */}
-                            <div className="relative">
-                                <label htmlFor="city-interest" className="sr-only">City of Interest</label>
-                                <select id="city-interest" value={formData.city} onChange={e => update('city', e.target.value)}
-                                    className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] appearance-none">
-                                    <option value="" disabled className="bg-[#1A1714]">City of Interest</option>
-                                    <option value="pune" className="bg-[#1A1714]">Pune</option>
-                                    <option value="mumbai" className="bg-[#1A1714]">Mumbai</option>
-                                    <option value="bangalore" className="bg-[#1A1714]">Bangalore</option>
-                                    <option value="other" className="bg-[#1A1714]">Other</option>
-                                </select>
-                                <ChevronDown className="absolute right-0 top-3 w-4 h-4 text-[#7A7268] pointer-events-none" />
-                            </div>
-
-                            {/* Budget */}
-                            <div className="relative">
-                                <label htmlFor="budget-range" className="sr-only">Budget Range</label>
-                                <select id="budget-range" value={formData.budget} onChange={e => update('budget', e.target.value)}
-                                    className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] appearance-none">
-                                    <option value="" disabled className="bg-[#1A1714]">Budget Range</option>
-                                    <option value="under50l" className="bg-[#1A1714]">Under ₹50 Lakhs</option>
-                                    <option value="50l-1cr" className="bg-[#1A1714]">₹50L – ₹1 Crore</option>
-                                    <option value="1cr-2cr" className="bg-[#1A1714]">₹1Cr – ₹2 Crore</option>
-                                    <option value="2cr-5cr" className="bg-[#1A1714]">₹2Cr – ₹5 Crore</option>
-                                    <option value="5cr+" className="bg-[#1A1714]">₹5 Crore+</option>
-                                </select>
-                                <ChevronDown className="absolute right-0 top-3 w-4 h-4 text-[#7A7268] pointer-events-none" />
-                            </div>
-
-                            {/* Message */}
                             <div className="relative group">
-                                <textarea id="message" rows="4"
-                                    className="w-full bg-transparent border-b border-[#2E2A25] py-2 text-[#F5F0E8] font-sans focus:outline-none focus:border-[#C9A96E] transition-colors peer placeholder-transparent resize-none"
+                                <textarea
+                                    id="message"
+                                    rows="4"
+                                    required
+                                    className="peer w-full resize-none border-b border-[#2E2A25] bg-transparent py-2 font-sans text-[#F5F0E8] outline-none transition-colors placeholder-transparent focus:border-[#C9A96E]"
                                     placeholder="Message"
-                                    value={formData.message} onChange={e => update('message', e.target.value)}
+                                    value={formData.message}
+                                    onChange={(event) => update('message', event.target.value)}
                                 />
-                                <label htmlFor="message" className="absolute left-0 -top-4 text-xs font-sans text-[#7A7268] transition-all peer-placeholder-shown:text-base peer-placeholder-shown:top-2 peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#C9A96E]">Message / Requirements</label>
+                                <label htmlFor="message" className="absolute -top-4 left-0 font-sans text-xs text-[#7A7268] transition-all peer-placeholder-shown:top-2 peer-placeholder-shown:text-base peer-focus:-top-4 peer-focus:text-xs peer-focus:text-[#C9A96E]">Message / Requirements</label>
                             </div>
 
-                            <button type="submit" disabled={isSubmitting}
-                                className="w-full bg-[#C9A96E] text-[#0D0B09] py-4 font-sans text-[13px] uppercase tracking-widest hover:bg-[#F5F0E8] hover:scale-[1.02] transition-all shadow-lg cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100">
+                            <p className="font-sans text-[11px] leading-relaxed text-[#7A7268]">
+                                By submitting, you consent to being contacted by phone, email, SMS, or WhatsApp about your enquiry. Listing details should be independently verified before any transaction.
+                            </p>
+
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full bg-[#C9A96E] py-4 font-sans text-[13px] uppercase tracking-widest text-[#0D0B09] shadow-lg shadow-[#C9A96E]/20 transition-all hover:scale-[1.02] hover:bg-[#F5F0E8] disabled:scale-100 disabled:opacity-60"
+                            >
                                 {isSubmitting ? 'Sending...' : 'Send Enquiry'}
                             </button>
                         </form>

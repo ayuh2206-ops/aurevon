@@ -1,12 +1,58 @@
-// Site-wide configuration
+// Site-wide business configuration.
+// Replace these values per client; public pages and admin defaults consume this object.
+export const BUSINESS = {
+  businessName: "Aurevon Realty Pvt. Ltd.",
+  tagline: "Where Vision Meets Reality.",
+  establishedYear: 2001,
+  founderName: "Arun Dongare",
+  primaryAgentName: "Aurevon Advisory Team",
+  licenseName: "MahaRERA",
+  licenseNumber: "PRXXXXXXXXXXXXX",
+  officePhone: "+91 9767 446 655",
+  secondaryPhone: "+91 8180 993 030",
+  email: "info@aurevonrealty.in",
+  whatsappNumbers: "918180993030|919767446655",
+  officeAddress: "Pune, Maharashtra, India",
+  city: "Pune",
+  stateOrRegion: "Maharashtra",
+  postalCode: "411045",
+  country: "India",
+  geoLatitude: "18.5204",
+  geoLongitude: "73.8567",
+  primaryServiceAreas: ["Baner", "Balewadi", "Kharadi", "Hinjewadi", "Wakad", "Viman Nagar"],
+  websiteBaseUrl: process.env.NEXT_PUBLIC_SITE_URL || "https://aurevonrealty.in",
+  socialLinks: {
+    googleMaps: "",
+    instagram: "",
+    facebook: "",
+    youtube: "",
+    linkedin: "https://linkedin.com/in/arundongare-64b486351",
+  },
+};
+
+const configuredAdminEmails = (
+  process.env.NEXT_PUBLIC_ADMIN_EMAILS ||
+  process.env.NEXT_PUBLIC_ADMIN_EMAIL ||
+  "arundongare150@gmail.com,info@aurevonrealty.in"
+)
+  .split(",")
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean);
+
+export const ADMIN_EMAILS = configuredAdminEmails;
+
+export function isAdminEmail(email) {
+  return Boolean(email && ADMIN_EMAILS.includes(String(email).toLowerCase()));
+}
+
 export const SITE_CONFIG = {
-  ARUN_PHONE: "919767446655",
-  ARUN_WHATSAPP: "918180993030",
-  RERA_NUMBER: "PRXXXXXXXXXXXXX",
-  ADMIN_EMAIL: "info@aurevonrealty.in",
-  LINKEDIN_URL: "https://linkedin.com/in/arundongare-64b486351",
-  COMPANY_NAME: "Aurevon Realty Pvt. Ltd.",
-  FOUNDED_YEAR: 2001,
+  ARUN_PHONE: BUSINESS.officePhone.replace(/\D/g, ""),
+  ARUN_WHATSAPP: BUSINESS.whatsappNumbers.split("|")[0],
+  RERA_NUMBER: BUSINESS.licenseNumber,
+  ADMIN_EMAIL: BUSINESS.email,
+  LINKEDIN_URL: BUSINESS.socialLinks.linkedin,
+  COMPANY_NAME: BUSINESS.businessName,
+  FOUNDED_YEAR: BUSINESS.establishedYear,
 };
 
 export const COLORS = {

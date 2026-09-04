@@ -2,8 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-
-const ADMIN_EMAIL = 'arundongare150@gmail.com';
+import { isAdminEmail } from '@/lib/config';
 
 export default function AdminLoginPage() {
     const { user, loginWithGoogle, logout, loading } = useAuth();
@@ -13,7 +12,7 @@ export default function AdminLoginPage() {
 
     // If already logged in as admin, go straight to dashboard
     useEffect(() => {
-        if (!loading && user && user.email === ADMIN_EMAIL) {
+        if (!loading && user && isAdminEmail(user.email)) {
             router.push('/admin/dashboard');
         }
     }, [user, loading, router]);
@@ -25,7 +24,7 @@ export default function AdminLoginPage() {
             const credential = await loginWithGoogle();
             
             // Check if the Google account matches the hardcoded admin email
-            if (credential.user.email !== ADMIN_EMAIL) {
+            if (!isAdminEmail(credential.user.email)) {
                 await logout();
                 setError('Unauthorized. This portal is restricted to the site administrator.');
             }
@@ -78,4 +77,3 @@ export default function AdminLoginPage() {
         </div>
     );
 }
-

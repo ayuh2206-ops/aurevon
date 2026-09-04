@@ -32,6 +32,19 @@ export default function SubmitPropertyPageWrapper() {
     );
 }
 
+function SectionHeader({ id, title, openSection, setOpenSection }) {
+    return (
+        <button
+            type="button"
+            onClick={() => setOpenSection(openSection === id ? '' : id)}
+            className="w-full text-left flex justify-between items-center py-4 border-b border-[#D9D0C0] font-serif text-xl text-[#1A1714] cursor-pointer"
+        >
+            {title}
+            <span className="text-[#C9A96E]">{openSection === id ? '-' : '+'}</span>
+        </button>
+    );
+}
+
 function SubmitPropertyPage() {
     const router = useRouter();
     const { user, loading } = useAuth();
@@ -168,17 +181,6 @@ function SubmitPropertyPage() {
         }
     };
 
-    const SectionHeader = ({ id, title }) => (
-        <button
-            type="button"
-            onClick={() => setOpenSection(openSection === id ? '' : id)}
-            className="w-full text-left flex justify-between items-center py-4 border-b border-[#D9D0C0] font-serif text-xl text-[#1A1714] cursor-pointer"
-        >
-            {title}
-            <span className="text-[#C9A96E]">{openSection === id ? '−' : '+'}</span>
-        </button>
-    );
-
     if (loading || !user) {
         return <div className="min-h-screen py-32 flex justify-center bg-[#F5F0E8]"><div className="w-8 h-8 border-2 border-[#C9A96E] border-t-transparent rounded-full animate-spin"></div></div>;
     }
@@ -205,7 +207,7 @@ function SubmitPropertyPage() {
 
                 <form onSubmit={handleSave} className="bg-white rounded shadow border border-[#D9D0C0] p-4 sm:p-8">
                     {/* SECTION 1: Basic Information */}
-                    <SectionHeader id="basic" title="Basic Information" />
+                    <SectionHeader id="basic" title="Basic Information" openSection={openSection} setOpenSection={setOpenSection} />
                     {openSection === 'basic' && (
                         <div className="py-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div className="sm:col-span-2">
@@ -243,7 +245,7 @@ function SubmitPropertyPage() {
                     )}
 
                     {/* SECTION 2: Location */}
-                    <SectionHeader id="location" title="Location" />
+                    <SectionHeader id="location" title="Location" openSection={openSection} setOpenSection={setOpenSection} />
                     {openSection === 'location' && (
                         <div className="py-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div>
@@ -272,7 +274,7 @@ function SubmitPropertyPage() {
                     )}
 
                     {/* SECTION 3: Pricing */}
-                    <SectionHeader id="pricing" title="Pricing" />
+                    <SectionHeader id="pricing" title="Pricing" openSection={openSection} setOpenSection={setOpenSection} />
                     {openSection === 'pricing' && (
                         <div className="py-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div>
@@ -295,7 +297,7 @@ function SubmitPropertyPage() {
                     )}
 
                     {/* SECTION 4: Property Details */}
-                    <SectionHeader id="details" title="Property Details" />
+                    <SectionHeader id="details" title="Property Details" openSection={openSection} setOpenSection={setOpenSection} />
                     {openSection === 'details' && (
                         <div className="py-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             <div>
@@ -357,7 +359,7 @@ function SubmitPropertyPage() {
                     )}
 
                     {/* SECTION 5: Amenities */}
-                    <SectionHeader id="amenities" title="Amenities" />
+                    <SectionHeader id="amenities" title="Amenities" openSection={openSection} setOpenSection={setOpenSection} />
                     {openSection === 'amenities' && (
                         <div className="py-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                             {amenitiesList.map(a => (
@@ -370,7 +372,7 @@ function SubmitPropertyPage() {
                     )}
 
                     {/* SECTION 6: Media */}
-                    <SectionHeader id="media" title="Media & Description" />
+                    <SectionHeader id="media" title="Media & Description" openSection={openSection} setOpenSection={setOpenSection} />
                     {openSection === 'media' && (
                         <div className="py-6 grid grid-cols-1 gap-6">
                             <div>
