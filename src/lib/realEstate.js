@@ -923,6 +923,13 @@ function normalizeTimestamp(value) {
   return String(value);
 }
 
+export function normalizeAssetUrl(value) {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  return trimmed.startsWith("http://") ? `https://${trimmed.slice("http://".length)}` : trimmed;
+}
+
 function statusToAvailability(status, constructionStatus) {
   const statusValue = String(status || "");
   if (AVAILABILITY_OPTIONS.includes(statusValue)) return statusValue;
@@ -938,13 +945,13 @@ export function normalizeProperty(property = {}) {
   const type = property.propertyType || property.typeName || (typeWasCategory ? property.subtype : property.type) || property.subtype || category;
   const title = property.title || property.name || "Untitled Property";
   const price = Number(property.price) || parsePriceToNumber(property.priceMin) || parsePriceToNumber(property.priceDisplay) || 0;
-  const thumbnail = property.thumbnail || property.image || property.featureImage || "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1000&q=80";
+  const thumbnail = normalizeAssetUrl(property.thumbnail || property.image || property.featureImage || "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1000&q=80");
   const gallery = [
     thumbnail,
     ...(property.images || []),
     ...(property.gallery || []),
     property.floorPlan,
-  ].filter(Boolean);
+  ].map(normalizeAssetUrl).filter(Boolean);
   const dedupedGallery = [...new Set(gallery)];
   const rawStatus = property.status || (property.active === false ? "Draft" : "Published");
   const status = PROPERTY_STATUSES.includes(rawStatus)
@@ -1005,7 +1012,8 @@ export function normalizeProperty(property = {}) {
     thumbnail,
     image: thumbnail,
     images: dedupedGallery,
-    videoUrl: property.videoUrl || property.virtualTourUrl || "",
+    floorPlan: normalizeAssetUrl(property.floorPlan || ""),
+    videoUrl: normalizeAssetUrl(property.videoUrl || property.virtualTourUrl || ""),
     inquiries: Number(property.inquiries) || 0,
     views: Number(property.views) || 0,
     createdAt: normalizeTimestamp(property.createdAt),
@@ -1102,6 +1110,7 @@ export function normalizeArticle(article = {}) {
   const title = article.title || "Untitled Article";
   const slug = article.slug || title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const createdAt = normalizeTimestamp(article.createdAt || article.date);
+  const imageUrl = normalizeAssetUrl(article.imageUrl || article.image || "");
   return {
     ...article,
     id: article.id || slug,
@@ -1110,8 +1119,8 @@ export function normalizeArticle(article = {}) {
     category: article.category || "Market Insights",
     excerpt: article.excerpt || article.metaDescription || "",
     content: article.content || article.contentText || "",
-    imageUrl: article.imageUrl || article.image || "",
-    image: article.image || article.imageUrl || "",
+    imageUrl,
+    image: normalizeAssetUrl(article.image || imageUrl),
     author: article.author || BUSINESS.founderName,
     authorRole: article.authorRole || "Founder & Principal Broker",
     tags: article.tags || [],

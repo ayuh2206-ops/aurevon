@@ -25,6 +25,7 @@ import {
   formatBhkOption,
   getSampleArticles,
   getSampleProperties,
+  normalizeAssetUrl,
   normalizeArticle,
   normalizeProperty,
   nowISO,
@@ -105,8 +106,8 @@ function mapContentSettings(data = {}) {
   return {
     ...DEFAULT_CONTENT_SETTINGS,
     ...data,
-    logoUrl: data.logoUrl || data.logo || DEFAULT_CONTENT_SETTINGS.logoUrl,
-    heroImage: data.heroImage || data.heroBackground || DEFAULT_CONTENT_SETTINGS.heroImage,
+    logoUrl: normalizeAssetUrl(data.logoUrl || data.logo || DEFAULT_CONTENT_SETTINGS.logoUrl),
+    heroImage: normalizeAssetUrl(data.heroImage || data.heroBackground || DEFAULT_CONTENT_SETTINGS.heroImage),
     heroTitle: data.heroTitle || data.heroHeadline || DEFAULT_CONTENT_SETTINGS.heroTitle,
     heroSubtitle: data.heroSubtitle || data.heroSubtext || DEFAULT_CONTENT_SETTINGS.heroSubtitle,
     aboutText: data.aboutText || DEFAULT_CONTENT_SETTINGS.aboutText,
@@ -119,8 +120,10 @@ function mapContentSettings(data = {}) {
     contactEmail: data.contactEmail || data.email || DEFAULT_CONTENT_SETTINGS.contactEmail,
     contactRera: data.contactRera || data.reraNumber || DEFAULT_CONTENT_SETTINGS.contactRera,
     contactWhatsapp: data.contactWhatsapp || data.whatsappNumber || DEFAULT_CONTENT_SETTINGS.contactWhatsapp,
+    mapEmbedUrl: normalizeAssetUrl(data.mapEmbedUrl || DEFAULT_CONTENT_SETTINGS.mapEmbedUrl),
     founderName: data.founderName || DEFAULT_CONTENT_SETTINGS.founderName,
     founderTitle: data.founderTitle || DEFAULT_CONTENT_SETTINGS.founderTitle,
+    founderPhoto: normalizeAssetUrl(data.founderPhoto || DEFAULT_CONTENT_SETTINGS.founderPhoto),
   };
 }
 
