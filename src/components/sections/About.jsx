@@ -8,13 +8,34 @@ import { DEFAULT_CONTENT_SETTINGS } from '@/lib/realEstate';
 import { getContentSettings } from '@/lib/firebaseUtils';
 
 export default function About({ standalone = false }) {
-    const [settings, setSettings] = useState(DEFAULT_CONTENT_SETTINGS);
+    const [settings, setSettings] = useState(null);
+    const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
 
     useEffect(() => {
-        getContentSettings().then(setSettings).catch(() => {});
+        let isMounted = true;
+
+        getContentSettings()
+            .then((content) => {
+                if (isMounted) setSettings(content);
+            })
+            .catch(() => {
+                if (isMounted) setSettings(DEFAULT_CONTENT_SETTINGS);
+            })
+            .finally(() => {
+                if (isMounted) setHasLoadedSettings(true);
+            });
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
-    const paragraphs = String(settings.aboutText || DEFAULT_CONTENT_SETTINGS.aboutText)
+    const activeSettings = settings || DEFAULT_CONTENT_SETTINGS;
+    const founderName = activeSettings.founderName || BUSINESS.founderName;
+    const founderTitle = activeSettings.founderTitle || 'Founder & Principal Broker';
+    const founderPhoto = settings?.founderPhoto || (hasLoadedSettings ? DEFAULT_CONTENT_SETTINGS.founderPhoto : '');
+
+    const paragraphs = String(activeSettings.aboutText || DEFAULT_CONTENT_SETTINGS.aboutText)
         .split(/\n\s*\n/)
         .filter(Boolean);
 
@@ -23,23 +44,32 @@ export default function About({ standalone = false }) {
             <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-16 px-6 md:grid-cols-2">
                 <div className="relative">
                     <div className="relative z-10 mx-auto aspect-[3/4] max-w-md border border-[#C9A96E]/30 p-2">
-                        <img
-                            src={settings.founderPhoto || "/images/arun-dongare.png"}
-                            alt={`${settings.founderName || BUSINESS.founderName} - Founder`}
-                            className="h-full w-full object-cover object-top"
-                            loading="lazy"
-                        />
+                        {founderPhoto ? (
+                            <img
+                                src={founderPhoto}
+                                alt={`${founderName} - Founder`}
+                                className="h-full w-full object-cover object-top"
+                                loading="lazy"
+                            />
+                        ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-[#1A1714]">
+                                <div className="text-center">
+                                    <p className="font-serif text-4xl text-[#C9A96E]">AUREVON</p>
+                                    <p className="mt-3 font-sans text-[10px] uppercase tracking-[0.25em] text-[#7A7268]">Principal Image</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                     <div className="absolute -left-4 top-12 z-0 hidden h-[1px] w-24 bg-[#C9A96E] md:block" />
                     <div className="absolute -bottom-6 right-12 z-20 border border-[#2E2A25] bg-[#0D0B09] px-4 py-2 font-sans text-[10px] uppercase tracking-widest text-[#C9A96E]">
-                        {settings.founderTitle || 'Founder & Principal Broker'}
+                        {founderTitle}
                     </div>
                 </div>
 
                 <div>
                     <span className="mb-4 block font-sans text-xs uppercase tracking-[0.2em] text-[#C9A96E]">Meet The Principal</span>
-                    <h2 className="mb-2 font-serif text-5xl text-[#F5F0E8] md:text-6xl">{settings.founderName || BUSINESS.founderName}</h2>
-                    <h3 className="mb-8 font-serif text-2xl italic text-[#7A7268]">{settings.founderTitle || '25 Years of Real Estate Mastery'}</h3>
+                    <h2 className="mb-2 font-serif text-5xl text-[#F5F0E8] md:text-6xl">{founderName}</h2>
+                    <h3 className="mb-8 font-serif text-2xl italic text-[#7A7268]">{founderTitle}</h3>
 
                     <div className="mb-10 space-y-6 text-base leading-relaxed text-[#F5F0E8]/70" style={{ fontFamily: "'Inter', sans-serif" }}>
                         {paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
