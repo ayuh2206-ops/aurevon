@@ -71,6 +71,16 @@ export default function About({ standalone = false }) {
                                 LinkedIn <ArrowUpRight className="ml-2 h-4 w-4 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
                             </a>
                         )}
+                        {BUSINESS.socialLinks.instagram && (
+                            <a
+                                href={BUSINESS.socialLinks.instagram}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center font-sans text-sm uppercase tracking-wider text-[#7A7268] transition-colors hover:text-[#C9A96E] group"
+                            >
+                                Instagram <ArrowUpRight className="ml-2 h-4 w-4 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
+                            </a>
+                        )}
                     </div>
                 </div>
             </div>

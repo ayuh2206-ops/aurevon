@@ -23,10 +23,10 @@ export const BUSINESS = {
   websiteBaseUrl: process.env.NEXT_PUBLIC_SITE_URL || "https://aurevonrealty.in",
   socialLinks: {
     googleMaps: "",
-    instagram: "",
+    instagram: "https://www.instagram.com/aurevon_realty_pvt._ltd?utm_source=ig_web_button_share_sheet&igsi=ZDNlZDc0MzIxNw==",
     facebook: "",
     youtube: "",
-    linkedin: "https://linkedin.com/in/arundongare-64b486351",
+    linkedin: "https://www.linkedin.com/in/arun-dongare-64b486351/",
   },
 };
 
@@ -42,6 +42,7 @@ export const SITE_CONFIG = {
   RERA_NUMBER: BUSINESS.licenseNumber,
   ADMIN_EMAIL: BUSINESS.email,
   LINKEDIN_URL: BUSINESS.socialLinks.linkedin,
+  INSTAGRAM_URL: BUSINESS.socialLinks.instagram,
   COMPANY_NAME: BUSINESS.businessName,
   FOUNDED_YEAR: BUSINESS.establishedYear,
 };

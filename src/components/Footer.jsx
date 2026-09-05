@@ -56,7 +56,7 @@ export default function Footer() {
     const whatsapp = getPrimaryWhatsapp(merged);
     const socialLinks = [
         { label: 'LinkedIn', href: merged.linkedinUrl || BUSINESS.socialLinks.linkedin },
-        { label: 'Instagram', href: merged.instagramUrl },
+        { label: 'Instagram', href: merged.instagramUrl || BUSINESS.socialLinks.instagram },
         { label: 'Facebook', href: merged.facebookUrl },
         { label: 'YouTube', href: merged.youtubeUrl },
     ].filter((item) => item.href);
