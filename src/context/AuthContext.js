@@ -7,6 +7,7 @@ import {
     onAuthStateChanged,
     signInWithEmailAndPassword,
     signInWithPopup,
+    signInWithRedirect,
     signOut,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -122,14 +123,23 @@ export const AuthProvider = ({ children }) => {
         return credential;
     };
 
-    const loginWithGoogle = async () => {
+    const loginWithGoogle = async ({ syncProfile = true } = {}) => {
         if (!auth) throw new Error('Firebase Auth is not configured.');
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ prompt: 'select_account' });
         const credential = await signInWithPopup(auth, provider);
-        const profile = await ensureUserProfile(credential.user);
-        setUserProfile(profile);
+        if (syncProfile) {
+            const profile = await ensureUserProfile(credential.user);
+            setUserProfile(profile);
+        }
         return credential;
+    };
+
+    const loginWithGoogleRedirect = async () => {
+        if (!auth) throw new Error('Firebase Auth is not configured.');
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+        await signInWithRedirect(auth, provider);
     };
 
     const logout = async () => {
@@ -230,6 +240,7 @@ export const AuthProvider = ({ children }) => {
                 login,
                 signup,
                 loginWithGoogle,
+                loginWithGoogleRedirect,
                 logout,
                 openAuthModal,
                 closeAuthModal,

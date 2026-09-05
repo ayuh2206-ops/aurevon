@@ -98,7 +98,7 @@ function PropertyForm() {
     const [formData, setFormData] = useState(emptyForm(DEFAULT_SITE_OPTIONS));
     const [isSaving, setIsSaving] = useState(false);
     const [isLoadingData, setIsLoadingData] = useState(Boolean(editId));
-    const [imageFile, setImageFile] = useState(null);
+    const [uploadingPhotoField, setUploadingPhotoField] = useState('');
     const [error, setError] = useState('');
 
     useEffect(() => {
@@ -191,6 +191,60 @@ function PropertyForm() {
         }));
     };
 
+    const uploadMainImage = async (file) => {
+        if (!file) return;
+        setUploadingPhotoField('thumbnail');
+        setError('');
+        try {
+            const url = await uploadToCloudinary(file);
+            setFormData((prev) => ({
+                ...prev,
+                thumbnail: url,
+                images: [...new Set([url, ...prev.images].filter(Boolean))],
+            }));
+        } catch (uploadError) {
+            console.error(uploadError);
+            setError(uploadError.message || 'Main image upload failed.');
+        } finally {
+            setUploadingPhotoField('');
+        }
+    };
+
+    const uploadGalleryImages = async (files) => {
+        const selectedFiles = Array.from(files || []);
+        if (!selectedFiles.length) return;
+        setUploadingPhotoField('gallery');
+        setError('');
+        try {
+            const urls = await Promise.all(selectedFiles.map((file) => uploadToCloudinary(file)));
+            setFormData((prev) => ({
+                ...prev,
+                thumbnail: prev.thumbnail || urls[0] || '',
+                images: [...new Set([...prev.images, ...urls].filter(Boolean))],
+            }));
+        } catch (uploadError) {
+            console.error(uploadError);
+            setError(uploadError.message || 'Gallery image upload failed.');
+        } finally {
+            setUploadingPhotoField('');
+        }
+    };
+
+    const uploadFloorPlan = async (file) => {
+        if (!file) return;
+        setUploadingPhotoField('floorPlan');
+        setError('');
+        try {
+            const url = await uploadToCloudinary(file);
+            update('floorPlan', url);
+        } catch (uploadError) {
+            console.error(uploadError);
+            setError(uploadError.message || 'Floor plan upload failed.');
+        } finally {
+            setUploadingPhotoField('');
+        }
+    };
+
     const validate = () => {
         if (!formData.title.trim()) return 'Property title is required.';
         if (!formData.locality.trim()) return 'Locality is required.';
@@ -208,10 +262,7 @@ function PropertyForm() {
         setIsSaving(true);
         setError('');
         try {
-            let thumbnail = formData.thumbnail;
-            if (imageFile) {
-                thumbnail = await uploadToCloudinary(imageFile);
-            }
+            const thumbnail = formData.thumbnail;
             const images = [...new Set([thumbnail, ...formData.images].filter(Boolean))];
             const payload = {
                 ...formData,
@@ -422,16 +473,24 @@ function PropertyForm() {
                     <div className="space-y-6">
                         <div>
                             <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Thumbnail / Main Image Upload</label>
-                            <input type="file" accept="image/*" onChange={(event) => setImageFile(event.target.files?.[0] || null)} className="w-full rounded border border-[#D9D0C0] p-2.5 text-sm outline-none focus:border-[#C9A96E]" />
-                            {imageFile && <p className="mt-1 text-xs text-green-700">Selected: {imageFile.name}</p>}
+                            <label className="flex cursor-pointer items-center justify-center rounded border border-[#D9D0C0] px-4 py-3 font-sans text-xs uppercase tracking-wider text-[#7A7268] hover:border-[#C9A96E] hover:text-[#1A1714]">
+                                {uploadingPhotoField === 'thumbnail' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImagePlus className="mr-2 h-4 w-4" />}
+                                Upload Main Image
+                                <input type="file" accept="image/*" onChange={(event) => uploadMainImage(event.target.files?.[0])} className="hidden" />
+                            </label>
                         </div>
                         <div>
                             <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Thumbnail URL</label>
                             <input value={formData.thumbnail} onChange={(event) => update('thumbnail', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
                         </div>
-                        <div className="flex gap-3">
+                        <div className="flex flex-col gap-3 sm:flex-row">
                             <input value={formData.newImageUrl} onChange={(event) => update('newImageUrl', event.target.value)} placeholder="Paste gallery image URL" className="flex-1 rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
-                            <button onClick={addImageUrl} className="flex items-center rounded bg-[#0D0B09] px-4 py-2 text-sm text-[#C9A96E]"><ImagePlus className="mr-2 h-4 w-4" /> Add</button>
+                            <button onClick={addImageUrl} className="flex items-center justify-center rounded bg-[#0D0B09] px-4 py-2 text-sm text-[#C9A96E]"><ImagePlus className="mr-2 h-4 w-4" /> Add URL</button>
+                            <label className="flex cursor-pointer items-center justify-center rounded border border-[#D9D0C0] px-4 py-2 font-sans text-xs uppercase tracking-wider text-[#7A7268] hover:border-[#C9A96E] hover:text-[#1A1714]">
+                                {uploadingPhotoField === 'gallery' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImagePlus className="mr-2 h-4 w-4" />}
+                                Upload Gallery
+                                <input type="file" accept="image/*" multiple onChange={(event) => uploadGalleryImages(event.target.files)} className="hidden" />
+                            </label>
                         </div>
                         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                             {[formData.thumbnail, ...formData.images].filter(Boolean).map((image, index) => (
@@ -448,7 +507,14 @@ function PropertyForm() {
                         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                             <div>
                                 <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Floor Plan URL</label>
-                                <input value={formData.floorPlan} onChange={(event) => update('floorPlan', event.target.value)} className="w-full rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
+                                <div className="flex flex-col gap-3 sm:flex-row">
+                                    <input value={formData.floorPlan} onChange={(event) => update('floorPlan', event.target.value)} className="flex-1 rounded border border-[#D9D0C0] p-2.5 outline-none focus:border-[#C9A96E]" />
+                                    <label className="flex cursor-pointer items-center justify-center rounded border border-[#D9D0C0] px-4 py-2 font-sans text-xs uppercase tracking-wider text-[#7A7268] hover:border-[#C9A96E] hover:text-[#1A1714]">
+                                        {uploadingPhotoField === 'floorPlan' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImagePlus className="mr-2 h-4 w-4" />}
+                                        Upload
+                                        <input type="file" accept="image/*" onChange={(event) => uploadFloorPlan(event.target.files?.[0])} className="hidden" />
+                                    </label>
+                                </div>
                             </div>
                             <div>
                                 <label className="mb-1 block text-xs font-medium uppercase text-[#7A7268]">Video URL</label>

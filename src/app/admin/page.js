@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { isAdminEmail } from '@/lib/config';
 
 export default function AdminLoginPage() {
-    const { user, loginWithGoogle, logout, loading } = useAuth();
+    const { user, loginWithGoogle, loginWithGoogleRedirect, logout, loading } = useAuth();
     const router = useRouter();
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -17,21 +17,52 @@ export default function AdminLoginPage() {
         }
     }, [user, loading, router]);
 
+    const getGoogleLoginError = (err) => {
+        const code = err?.code || '';
+        if (code === 'auth/unauthorized-domain') {
+            return 'This domain is not authorized in Firebase. Add aurevon.vercel.app and your live domain under Firebase Authentication settings.';
+        }
+        if (code === 'auth/operation-not-allowed') {
+            return 'Google sign-in is not enabled in Firebase Authentication.';
+        }
+        if (code === 'auth/network-request-failed') {
+            return 'Network error while contacting Firebase. Please check the connection and try again.';
+        }
+        if (code === 'auth/popup-blocked') {
+            return 'The Google popup was blocked. Allow popups for this site or use the redirect sign-in fallback.';
+        }
+        if (code === 'auth/popup-closed-by-user') {
+            return 'The Google popup was closed before sign-in finished.';
+        }
+        return err?.message || 'Failed to sign in with Google. Please try again.';
+    };
+
     const handleGoogleLogin = async () => {
         setError('');
         setIsLoading(true);
         try {
-            const credential = await loginWithGoogle();
+            const credential = await loginWithGoogle({ syncProfile: false });
             
-            // Check if the Google account matches the hardcoded admin email
             if (!isAdminEmail(credential.user.email)) {
                 await logout();
                 setError('Unauthorized. This portal is restricted to the site administrator.');
+                return;
             }
-            // If it matches, the useEffect above will handle the redirect
+            router.replace('/admin/dashboard');
         } catch (err) {
             console.error('Admin Google login error:', err);
-            setError('Failed to sign in with Google. Please try again.');
+            if (err?.code === 'auth/popup-blocked') {
+                try {
+                    await loginWithGoogleRedirect();
+                    setError('Opening secure Google sign-in...');
+                    return;
+                } catch (redirectError) {
+                    console.error('Admin Google redirect error:', redirectError);
+                    setError(getGoogleLoginError(redirectError));
+                    return;
+                }
+            }
+            setError(getGoogleLoginError(err));
         } finally {
             setIsLoading(false);
         }

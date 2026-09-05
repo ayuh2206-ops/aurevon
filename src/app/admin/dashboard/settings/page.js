@@ -58,7 +58,7 @@ const fieldGroups = [
         fields: [
             { key: 'founderName', label: 'Founder Name', placeholder: BUSINESS.founderName },
             { key: 'founderTitle', label: 'Founder Title', placeholder: 'Founder & Principal Broker' },
-            { key: 'founderPhoto', label: 'Founder Photo URL', type: 'image', placeholder: '/images/arun-dongare.png' },
+            { key: 'founderPhoto', label: 'Founder / Principal Image', type: 'image', placeholder: '/images/arun-dongare.png' },
             { key: 'aboutText', label: 'About Text', type: 'textareaLarge', placeholder: DEFAULT_CONTENT_SETTINGS.aboutText },
             { key: 'footerDescription', label: 'Footer Description', type: 'textarea', placeholder: DEFAULT_CONTENT_SETTINGS.footerDescription },
         ],

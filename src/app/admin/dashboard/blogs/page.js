@@ -6,6 +6,7 @@ import {
     Edit3,
     Eye,
     FileText,
+    ImagePlus,
     Loader2,
     Plus,
     RefreshCw,
@@ -15,6 +16,7 @@ import {
     X,
 } from 'lucide-react';
 import { addArticle, deleteArticle, getArticles, updateArticle } from '@/lib/firebaseUtils';
+import { uploadToCloudinary } from '@/lib/cloudinary';
 
 const ARTICLE_CATEGORIES = [
     'Market Insights',
@@ -89,6 +91,7 @@ export default function AdminBlogPage() {
     const [statusFilter, setStatusFilter] = useState('All');
     const [categoryFilter, setCategoryFilter] = useState('All');
     const [error, setError] = useState('');
+    const [uploadingCover, setUploadingCover] = useState(false);
 
     const loadArticles = async () => {
         setIsLoading(true);
@@ -172,6 +175,21 @@ export default function AdminBlogPage() {
         if (!form.excerpt.trim()) return 'Excerpt is required.';
         if (!form.content.trim()) return 'Article content is required.';
         return '';
+    };
+
+    const uploadCoverImage = async (file) => {
+        if (!file) return;
+        setUploadingCover(true);
+        setError('');
+        try {
+            const url = await uploadToCloudinary(file);
+            updateForm('imageUrl', url);
+        } catch (uploadError) {
+            console.error(uploadError);
+            setError(uploadError.message || 'Cover image upload failed.');
+        } finally {
+            setUploadingCover(false);
+        }
     };
 
     const handleSave = async (statusOverride = form.status) => {
@@ -300,12 +318,19 @@ export default function AdminBlogPage() {
 
                         <div className="md:col-span-2">
                             <label className="mb-2 block font-sans text-xs uppercase tracking-wider text-[#7A7268]">Cover Image URL</label>
-                            <input
-                                value={form.imageUrl}
-                                onChange={(event) => updateForm('imageUrl', event.target.value)}
-                                className="w-full rounded border border-[#D9D0C0] px-4 py-3 font-sans text-sm outline-none focus:border-[#C9A96E]"
-                                placeholder="https://..."
-                            />
+                            <div className="flex flex-col gap-3 sm:flex-row">
+                                <input
+                                    value={form.imageUrl}
+                                    onChange={(event) => updateForm('imageUrl', event.target.value)}
+                                    className="flex-1 rounded border border-[#D9D0C0] px-4 py-3 font-sans text-sm outline-none focus:border-[#C9A96E]"
+                                    placeholder="https://..."
+                                />
+                                <label className="flex cursor-pointer items-center justify-center rounded border border-[#D9D0C0] px-4 py-3 font-sans text-xs uppercase tracking-wider text-[#7A7268] hover:border-[#C9A96E] hover:text-[#1A1714]">
+                                    {uploadingCover ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImagePlus className="mr-2 h-4 w-4" />}
+                                    Upload
+                                    <input type="file" accept="image/*" className="hidden" onChange={(event) => uploadCoverImage(event.target.files?.[0])} />
+                                </label>
+                            </div>
                             {form.imageUrl && (
                                 <div className="mt-4 aspect-[16/9] max-w-md overflow-hidden rounded border border-[#D9D0C0]">
                                     <img src={form.imageUrl} alt="Article cover preview" className="h-full w-full object-cover" />

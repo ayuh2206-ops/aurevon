@@ -9,12 +9,12 @@ export default function Preloader({ onComplete }) {
     }, [onComplete]);
 
     useEffect(() => {
-        const t1 = setTimeout(() => setStage(1), 400);
-        const t2 = setTimeout(() => setStage(2), 1200);
+        const t1 = setTimeout(() => setStage(1), 250);
+        const t2 = setTimeout(() => setStage(2), 650);
         const t3 = setTimeout(() => {
             setStage(3);
-            setTimeout(handleComplete, 1200);
-        }, 3200);
+            setTimeout(handleComplete, 550);
+        }, 1700);
 
         return () => {
             clearTimeout(t1);
@@ -24,7 +24,7 @@ export default function Preloader({ onComplete }) {
     }, [handleComplete]);
 
     return (
-        <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0D0B09] transition-opacity duration-1000 ease-in-out ${stage === 3 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+        <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0D0B09] transition-opacity duration-700 ease-in-out ${stage === 3 ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
             <h1
                 className="text-6xl md:text-8xl text-[#C9A96E] font-serif tracking-wide opacity-0 animate-fade-in"
                 style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}
