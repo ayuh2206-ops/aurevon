@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, ChevronDown, MapPin, Search, Send } from 'lucide-react';
 import { addLead, getSiteOptions } from '@/lib/firebaseUtils';
@@ -10,6 +10,7 @@ import {
     SALE_BUDGET_RANGES,
     formatBhkOption,
     trackConversion,
+    uniqueOptionList,
 } from '@/lib/realEstate';
 import { useTypewriter } from '@/hooks/useTypewriter';
 
@@ -28,6 +29,126 @@ const searchModes = [
     { id: 'commercial-rent', label: 'Commercial Rent', category: 'Commercial', listingType: 'Rent/Lease' },
     { id: 'commercial-sell', label: 'Commercial Sell', category: 'Commercial', listingType: 'Sell', isSell: true },
 ];
+
+function LocalityPicker({ value, onChange, options, variant = 'pill', placeholder = 'Locality' }) {
+    const [open, setOpen] = useState(false);
+    const [activeIndex, setActiveIndex] = useState(0);
+    const wrapperRef = useRef(null);
+    const localityOptions = useMemo(() => uniqueOptionList(options || []), [options]);
+    const term = value.trim().toLowerCase();
+    const matches = useMemo(() => {
+        if (!term) return localityOptions;
+        return localityOptions.filter((item) => item.toLowerCase().includes(term));
+    }, [localityOptions, term]);
+    const hasExactMatch = matches.some((item) => item.toLowerCase() === term);
+    const canUseTypedValue = Boolean(value.trim()) && !hasExactMatch;
+    const visibleOptions = canUseTypedValue ? [value.trim(), ...matches] : matches;
+    const inputId = variant === 'pill' ? 'home-locality' : 'sell-locality';
+    const listId = `${inputId}-listbox`;
+    const activeOptionId = visibleOptions[activeIndex] ? `${inputId}-option-${activeIndex}` : undefined;
+    const wrapperClass = variant === 'pill' ? 'relative' : 'relative min-w-0';
+    const inputClass = variant === 'pill'
+        ? 'w-full rounded-full border border-[#C9A96E] bg-transparent py-2 pl-9 pr-9 font-sans text-sm text-[#F5F0E8] outline-none placeholder:text-[#7A7268] focus:bg-[#0D0B09]'
+        : 'w-full rounded-lg border border-[#2E2A25] bg-[#1A1714] px-3 py-3 pr-9 font-sans text-sm text-[#F5F0E8] outline-none placeholder:text-[#7A7268] focus:border-[#C9A96E]';
+
+    useEffect(() => {
+        if (!open) return undefined;
+        const handlePointerDown = (event) => {
+            if (!wrapperRef.current?.contains(event.target)) setOpen(false);
+        };
+        document.addEventListener('pointerdown', handlePointerDown);
+        return () => document.removeEventListener('pointerdown', handlePointerDown);
+    }, [open]);
+
+    useEffect(() => {
+        setActiveIndex(0);
+    }, [value]);
+
+    const selectLocality = (item) => {
+        onChange(item);
+        setOpen(false);
+    };
+
+    const handleKeyDown = (event) => {
+        if (!open && ['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) {
+            setOpen(true);
+            return;
+        }
+        if (event.key === 'Escape') {
+            setOpen(false);
+            return;
+        }
+        if (!visibleOptions.length) return;
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            setActiveIndex((index) => (index + 1) % visibleOptions.length);
+        }
+        if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            setActiveIndex((index) => (index - 1 + visibleOptions.length) % visibleOptions.length);
+        }
+        if (event.key === 'Enter' && open) {
+            event.preventDefault();
+            selectLocality(visibleOptions[activeIndex]);
+        }
+    };
+
+    return (
+        <div ref={wrapperRef} className={wrapperClass}>
+            {variant === 'pill' && <MapPin className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-[#C9A96E]" />}
+            <label htmlFor={inputId} className="sr-only">{placeholder}</label>
+            <input
+                id={inputId}
+                value={value}
+                onChange={(event) => {
+                    onChange(event.target.value);
+                    setOpen(true);
+                }}
+                onFocus={() => setOpen(true)}
+                onKeyDown={handleKeyDown}
+                placeholder={placeholder}
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={open}
+                aria-controls={listId}
+                aria-activedescendant={open ? activeOptionId : undefined}
+                className={inputClass}
+            />
+            <ChevronDown className={`pointer-events-none absolute h-4 w-4 text-[#C9A96E] ${variant === 'pill' ? 'right-4 top-3' : 'right-3 top-4'}`} />
+            {open && (
+                <div
+                    id={listId}
+                    role="listbox"
+                    className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-[90] max-h-72 overflow-y-auto rounded-xl border border-[#C9A96E]/70 bg-[#0D0B09] p-1 shadow-[0_18px_45px_rgba(0,0,0,0.65)]"
+                >
+                    {visibleOptions.length ? (
+                        visibleOptions.map((item, index) => {
+                            const typedOption = canUseTypedValue && index === 0;
+                            const active = activeIndex === index;
+                            return (
+                                <button
+                                    id={`${inputId}-option-${index}`}
+                                    key={`${item}-${index}`}
+                                    type="button"
+                                    role="option"
+                                    aria-selected={active}
+                                    onMouseEnter={() => setActiveIndex(index)}
+                                    onClick={() => selectLocality(item)}
+                                    className={`flex w-full items-center justify-between rounded-lg px-4 py-2.5 text-left font-sans text-sm transition-colors ${active ? 'bg-[#C9A96E] text-[#0D0B09]' : 'text-[#F5F0E8] hover:bg-[#1A1714]'}`}
+                                >
+                                    <span>{typedOption ? `Use "${item}"` : item}</span>
+                                    {!typedOption && value === item && <span className="text-xs uppercase tracking-widest opacity-70">Selected</span>}
+                                </button>
+                            );
+                        })
+                    ) : (
+                        <div className="px-4 py-3 font-sans text-sm text-[#9E968E]">No locality found</div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
 
 export default function SearchBar() {
     const router = useRouter();
@@ -55,11 +176,7 @@ export default function SearchBar() {
         ? (options.rentBudgets || RENT_BUDGET_RANGES.map((item) => item.label))
         : (options.buyBudgets || SALE_BUDGET_RANGES.map((item) => item.label));
 
-    const localityMatches = useMemo(() => {
-        const all = options.localities || options.locations || [];
-        if (!locality.trim()) return all;
-        return all.filter((item) => item.toLowerCase().includes(locality.toLowerCase()));
-    }, [locality, options]);
+    const localityOptions = options.localities || options.locations || [];
 
     const updateSellLead = (field, value) => {
         setSellLead((prev) => ({ ...prev, [field]: value }));
@@ -166,12 +283,12 @@ export default function SearchBar() {
                                 placeholder="Phone / WhatsApp"
                                 className="rounded-lg border border-[#2E2A25] bg-[#1A1714] px-3 py-3 font-sans text-sm text-[#F5F0E8] outline-none focus:border-[#C9A96E]"
                             />
-                            <input
+                            <LocalityPicker
                                 value={sellLead.locality}
-                                onChange={(event) => updateSellLead('locality', event.target.value)}
+                                onChange={(nextValue) => updateSellLead('locality', nextValue)}
                                 placeholder="Locality"
-                                className="rounded-lg border border-[#2E2A25] bg-[#1A1714] px-3 py-3 font-sans text-sm text-[#F5F0E8] outline-none focus:border-[#C9A96E]"
-                                list="sell-localities"
+                                options={localityOptions}
+                                variant="box"
                             />
                             <select
                                 value={sellLead.propertyType}
@@ -198,9 +315,6 @@ export default function SearchBar() {
                             />
                         </form>
                     )}
-                    <datalist id="sell-localities">
-                        {(options.localities || []).map((item) => <option key={item} value={item} />)}
-                    </datalist>
                 </div>
             ) : (
                 <div>
@@ -227,17 +341,12 @@ export default function SearchBar() {
 
                     <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         <div className="relative">
-                            <MapPin className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-[#C9A96E]" />
-                            <input
+                            <LocalityPicker
                                 value={locality}
-                                onChange={(event) => setLocality(event.target.value)}
+                                onChange={setLocality}
                                 placeholder="Locality"
-                                list="home-localities"
-                                className="w-full rounded-full border border-[#C9A96E] bg-transparent py-2 pl-9 pr-4 font-sans text-sm text-[#F5F0E8] outline-none placeholder:text-[#7A7268]"
+                                options={localityOptions}
                             />
-                            <datalist id="home-localities">
-                                {localityMatches.map((item) => <option key={item} value={item} />)}
-                            </datalist>
                         </div>
                         <div className="relative">
                             <select
