@@ -32,7 +32,7 @@ Firebase console requirements:
 
 - Enable Google sign-in in Firebase Authentication.
 - Deploy `firestore.rules` to the same Firebase project.
-- Only `vero.media.150@gmail.com` is allowed into the admin panel.
+- Only `vero.media.150@gmail.com` and `arundongare150@gmail.com` are allowed into the admin panel.
 
 ## Commands
 

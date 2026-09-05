@@ -30,7 +30,7 @@ export const BUSINESS = {
   },
 };
 
-export const ADMIN_EMAILS = ["vero.media.150@gmail.com"];
+export const ADMIN_EMAILS = ["vero.media.150@gmail.com", "arundongare150@gmail.com"];
 
 export function isAdminEmail(email) {
   return Boolean(email && ADMIN_EMAILS.includes(String(email).toLowerCase()));
